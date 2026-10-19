@@ -1,0 +1,15 @@
+{
+  "name": "Bao.Dumpling 自助点餐",
+  "short_name": "Bao.Dumpling",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f6f9fd",
+  "theme_color": "#062b68",
+  "icons": [
+    {
+      "src": "bao-dumpling-logo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

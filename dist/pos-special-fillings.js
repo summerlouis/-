@@ -51,19 +51,13 @@
     decorateFillingChoices();
     decorateCart();
   }).observe(document.body, { childList: true, subtree: true });
-  document.querySelector('#pay-pos').addEventListener('click', () => {
-    const count = JSON.parse(localStorage.getItem(orderKey) || '[]').length;
-    setTimeout(() => {
-      const list = JSON.parse(localStorage.getItem(orderKey) || '[]');
-      list.slice(count).forEach(order => {
-        order.service = service;
-        (order.items || []).forEach(item => {
-          const before = original[item.code] || [], after = special[item.code] || [];
-          const index = before.findIndex(entry => entry[0] === item.filling && entry[1] === item.fillingFr);
-          if (index >= 0 && after[index]) [item.filling, item.fillingFr] = after[index];
-        });
-      });
-      localStorage.setItem(orderKey, JSON.stringify(list));
-    }, 0);
-  }, true);
+  window.addEventListener('bao-pos-order', event => {
+    const order=event.detail;
+    order.service=service;
+    (order.items||[]).forEach(item=>{
+      const before=original[item.code]||[], after=special[item.code]||[];
+      const index=before.findIndex(entry=>entry[0]===item.filling&&entry[1]===item.fillingFr);
+      if(index>=0&&after[index])[item.filling,item.fillingFr]=after[index];
+    });
+  });
 })();

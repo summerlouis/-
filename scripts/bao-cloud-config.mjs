@@ -1,0 +1,10 @@
+import {readFileSync,writeFileSync,existsSync} from 'node:fs';
+const file='wrangler.bao.cloud.jsonc';
+if(existsSync(file))throw Error(file+' 已存在，请直接编辑，避免覆盖现有云端配置');
+const config=JSON.parse(readFileSync('wrangler.bao.jsonc','utf8'));
+config.name='bao-dumpling-demo';config.vars.STORE_ID='bao-cloud-demo';
+config.d1_databases[0].database_name='bao-dumpling-demo';
+config.d1_databases[0].database_id='REPLACE_WITH_YOUR_D1_DATABASE_ID';
+config.r2_buckets[0].bucket_name='bao-dumpling-demo-images';
+writeFileSync(file,JSON.stringify(config,null,2)+'\n');
+console.log('已生成 '+file+'。创建自己的云端资源并填写数据库 ID 后再部署；付款模式保持 mock。');

@@ -1,0 +1,106 @@
+[
+  {
+    "code": "A1",
+    "category": "包子",
+    "dish": "素包子",
+    "fr": "Bao végétarien",
+    "price": 1,
+    "active": true
+  },
+  {
+    "code": "A2",
+    "category": "包子",
+    "dish": "猪肉包",
+    "fr": "Bao porc",
+    "price": 1.25,
+    "active": true
+  },
+  {
+    "code": "A3",
+    "category": "包子",
+    "dish": "牛肉包",
+    "fr": "Bao bœuf",
+    "price": 1.5,
+    "active": true
+  },
+  {
+    "code": "A4",
+    "category": "包子",
+    "dish": "香煎包",
+    "fr": "Bao poêlé",
+    "price": 1.75,
+    "active": true
+  },
+  {
+    "code": "B1",
+    "category": "饺子",
+    "dish": "白面水饺",
+    "fr": "Raviolis nature",
+    "price": 4,
+    "active": true
+  },
+  {
+    "code": "B2",
+    "category": "饺子",
+    "dish": "菠菜水饺",
+    "fr": "Raviolis aux épinards",
+    "price": 5,
+    "active": true
+  },
+  {
+    "code": "B3",
+    "category": "饺子",
+    "dish": "胡萝卜水饺",
+    "fr": "Raviolis aux carottes",
+    "price": 5,
+    "active": true
+  },
+  {
+    "code": "B4",
+    "category": "饺子",
+    "dish": "三色水饺",
+    "fr": "Assortiment trois couleurs",
+    "price": 5,
+    "active": true
+  },
+  {
+    "code": "C1",
+    "category": "粥品",
+    "dish": "红豆粥",
+    "fr": "Congee aux haricots rouges",
+    "price": 3.5,
+    "active": true
+  },
+  {
+    "code": "C2",
+    "category": "粥品",
+    "dish": "绿豆粥",
+    "fr": "Congee aux haricots mungo",
+    "price": 3.5,
+    "active": true
+  },
+  {
+    "code": "C3",
+    "category": "粥品",
+    "dish": "小米粥",
+    "fr": "Congee au millet",
+    "price": 3.5,
+    "active": true
+  },
+  {
+    "code": "C4",
+    "category": "粥品",
+    "dish": "八宝粥",
+    "fr": "Congee huit trésors",
+    "price": 3.8,
+    "active": true
+  },
+  {
+    "code": "C5",
+    "category": "粥品",
+    "dish": "皮蛋瘦肉粥",
+    "fr": "Congee au porc et œuf de cent ans",
+    "price": 3.8,
+    "active": true
+  }
+]

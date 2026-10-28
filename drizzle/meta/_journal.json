@@ -1,0 +1,41 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1792944494873,
+      "tag": "0000_tiresome_boom_boom",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1792989295196,
+      "tag": "0001_mighty_boomerang",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1793011632617,
+      "tag": "0002_moaning_daredevil",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1793014894433,
+      "tag": "0003_bouncy_tana_nile",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1793083586816,
+      "tag": "0004_productive_vengeance",
+      "breakpoints": true
+    }
+  ]
+}

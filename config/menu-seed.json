@@ -1,0 +1,11 @@
+{
+  "capturedAt": "2026-10-28",
+  "description": "Current catalog changes only; no customer, order, account or credential data.",
+  "customProducts": [
+    {"code":"C6","category":"粥品","dish":"南瓜粥","fr":"","cents":300,"active":1}
+  ],
+  "overrides": [
+    {"code":"A1","cents":99,"active":1,"deleted":0},
+    {"code":"C6","cents":300,"active":0,"deleted":1}
+  ]
+}

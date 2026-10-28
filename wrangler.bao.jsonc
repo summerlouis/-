@@ -1,0 +1,15 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "bao-dumpling-test",
+  "main": ".wrangler/bao-build/standalone.mjs",
+  "no_bundle": true,
+  "build": {"command": "node scripts/build-bao.mjs", "watch_dir": ["worker", "lib", "app/api"]},
+  "compatibility_date": "2026-05-15",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {"directory": "./public", "binding": "ASSETS", "run_worker_first": true, "html_handling": "none"},
+  "vars": {"BAO_STANDALONE": "true", "PAYMENT_MODE": "mock", "STORE_ID": "bao-local-test"},
+  "d1_databases": [{"binding": "DB", "database_name": "bao-dumpling-test", "database_id": "00000000-0000-4000-8000-000000000001", "migrations_dir": "drizzle"}],
+  "r2_buckets": [{"binding": "BUCKET", "bucket_name": "bao-dumpling-test-images"}],
+  "durable_objects": {"bindings": [{"name": "ORDER_EVENTS", "class_name": "OrderEvents"}]},
+  "migrations": [{"tag": "v1", "new_sqlite_classes": ["OrderEvents"]}]
+}

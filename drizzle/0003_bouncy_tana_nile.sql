@@ -1,0 +1,1 @@
+ALTER TABLE `product_prices` ADD `deleted` integer DEFAULT 0 NOT NULL;

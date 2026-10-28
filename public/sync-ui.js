@@ -38,6 +38,12 @@
       const button=document.createElement('button');button.type='button';button.className='button';button.textContent='退出设备配对';button.onclick=async()=>{const response=await fetch('/api/device-session',{method:'DELETE'});if(response.ok)location.href='/';else alert('退出失败，请重试')};document.querySelector('header nav')?.append(button);
     }
     if(page==='kitchen'&&mock)document.querySelector('.hint').textContent='模拟付款后进入厨房 · 按顺序操作：开始制作 → 待取餐 → 完成出餐';
+    if(page==='admin'&&mock){
+      const controls=document.createElement('div');controls.className='order-filters';controls.innerHTML='<button type="button" class="button danger" id="cleanup-orders">清理已结束的订单</button><span id="cleanup-message" role="status"></span>';document.querySelector('#admin-orders').before(controls);
+      const button=controls.querySelector('button'),message=controls.querySelector('span');
+      const call=async body=>{const response=await fetch('/api/orders',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const data=await response.json();if(!response.ok)throw Error(data.error||'清理失败');return data};
+      button.onclick=async()=>{button.disabled=true;try{const preview=await call({action:'cleanup-preview'});if(!preview.count){message.textContent='暂无可清理的已结束模拟订单';return}if(!confirm('将清理 '+preview.count+' 笔已完成、已取消或已作废的模拟订单（包含往日记录）。待付款及厨房进行中的订单会保留。确认清理？'))return;const result=await call({action:'cleanup',ids:preview.ids});await BaoOrders.refresh();message.textContent='已清理 '+result.count+' 笔模拟订单';}catch(error){message.textContent=error.message}finally{button.disabled=false}};
+    }
     if(page!=='pos')return;
     const panel=document.createElement('section');panel.className='panel live-orders';panel.innerHTML='<h2>三端订单状态</h2><p class="note">自动显示顾客与 POS 订单，桌号、金额及制作状态同步更新。</p><div class="order-filters" role="group" aria-label="订单范围"><button class="button" data-order-filter="active" aria-pressed="true">进行中</button><button class="button" data-order-filter="all" aria-pressed="false">今日全部</button><span id="live-order-count" role="status"></span></div><div id="pos-live-orders"></div>';document.querySelector('main').append(panel);
     const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));

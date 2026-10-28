@@ -18,14 +18,14 @@ export async function GET(req:Request){
  const access=orderAccess(req);
  if(access.role==='customer'){
   if(!access.customerId)return json({error:'请重新打开点餐页面'},401);
-  const rows=await env.DB!.prepare("SELECT * FROM sales WHERE user_id=? AND json_extract(body,'$.customerId')=? ORDER BY sequence").bind(user,access.customerId).all<Row>();
+  const rows=await env.DB!.prepare("SELECT * FROM sales WHERE user_id=? AND json_extract(body,'$.customerId')=? AND json_extract(body,'$.cleanedAt') IS NULL ORDER BY sequence").bind(user,access.customerId).all<Row>();
   return json({orders:rows.results.map(decode),closures:[]});
  }
  const counts=await env.DB!.prepare('SELECT COUNT(*) AS count,COALESCE(MAX(sequence),0) AS last,COALESCE(SUM(revision),0) AS revision,(SELECT COUNT(*) FROM sales_closures WHERE user_id=?) AS closed FROM sales WHERE user_id=?').bind(user,user).first();
  const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(user+JSON.stringify(counts)));
  const etag='"'+Array.from(new Uint8Array(digest)).map(n=>n.toString(16).padStart(2,'0')).join('')+'"';
  if(req.headers.get('if-none-match')===etag)return new Response(null,{status:304,headers:{ETag:etag,'Cache-Control':'private, no-cache'}});
- const [rows,closed]=await Promise.all([env.DB!.prepare('SELECT * FROM sales WHERE user_id=? ORDER BY sequence').bind(user).all<Row>(),env.DB!.prepare('SELECT month,closed_at FROM sales_closures WHERE user_id=? ORDER BY month').bind(user).all<{month:string,closed_at:string}>()]);
+ const [rows,closed]=await Promise.all([env.DB!.prepare("SELECT * FROM sales WHERE user_id=? AND json_extract(body,'$.cleanedAt') IS NULL ORDER BY sequence").bind(user).all<Row>(),env.DB!.prepare('SELECT month,closed_at FROM sales_closures WHERE user_id=? ORDER BY month').bind(user).all<{month:string,closed_at:string}>()]);
  return Response.json({orders:rows.results.map(decode),closures:closed.results},{headers:{ETag:etag,'Cache-Control':'private, no-cache'}});
 }
 export async function POST(req:Request){
@@ -35,6 +35,14 @@ export async function POST(req:Request){
  if(access.role==='kitchen'||(data.action&&access.role!=='admin'))return json({error:'此设备无权执行该操作'},403);
  if(access.role==='customer'&&(data.order?.source!=='self'||!access.customerId))return json({error:'顾客只能提交自己的点餐订单'},403);
  if(access.mock&&data.action==='import')return json({error:'模拟环境不导入真实营业订单'},403);
+ if(data.action==='cleanup-preview'||data.action==='cleanup'){
+  if(!access.mock||access.role!=='admin')return json({error:'仅管理设备可清理模拟订单'},403);
+  const eligible="user_id=? AND json_extract(body,'$.isTest')=1 AND json_extract(body,'$.paymentMode')='mock' AND json_extract(body,'$.status') IN ('done','cancelled','voided') AND json_extract(body,'$.cleanedAt') IS NULL";
+  if(data.action==='cleanup-preview'){const result=await env.DB!.prepare('SELECT order_id FROM sales WHERE '+eligible).bind(user).all<{order_id:string}>();return json({ids:result.results.map(r=>r.order_id),count:result.results.length})}
+  if(!Array.isArray(data.ids)||!data.ids.length||data.ids.length>10000||data.ids.some((id:unknown)=>typeof id!=='string'||id.length>100))return json({error:'清理范围无效，请重新预览'},400);
+  const result=await env.DB!.prepare("UPDATE sales SET body=json_set(body,'$.cleanedAt',?),revision=revision+1 WHERE "+eligible+" AND order_id IN (SELECT value FROM json_each(?))").bind(new Date().toISOString(),user,JSON.stringify(data.ids)).run();
+  await notifyOrders(user,'');return json({count:result.meta.changes||0});
+ }
  if(data?.action==='close'){
   if(!/^\d{4}-(0[1-9]|1[0-2])$/.test(data.month))return json({error:'月份无效'},400);
   // Close only finished months; new orders must remain possible this month.

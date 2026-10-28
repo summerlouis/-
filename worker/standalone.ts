@@ -43,7 +43,7 @@ export default {
       return secureResponse(json({ok:true,role}));
     }
     if (path === '/api/runtime.js') {
-      const config = {cloud:true,mode:'mock',storeId:env.STORE_ID,role:session.role,sessionId:session.customerId,events:true};
+      const config = {cloud:true,mode:'mock',storeId:env.STORE_ID,role:session.role,sessionId:session.customerId,events:true,imageUploads:!!env.BUCKET};
       return secureResponse(new Response('window.BAO_CLOUD=true;window.BaoRuntime='+JSON.stringify(config)+';', {headers:{'Content-Type':'text/javascript; charset=utf-8','Cache-Control':'no-store'}}));
     }
     // Never trust identity headers supplied by a browser or proxy outside this worker.

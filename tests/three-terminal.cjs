@@ -2,7 +2,8 @@ const {chromium}=require(process.env.BAO_PLAYWRIGHT_MODULE||'playwright');
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
 const base=process.env.BAO_TEST_URL||'http://127.0.0.1:5173',root=path.resolve(__dirname,'..');
 const vars=fs.readFileSync(path.join(root,'.dev.vars'),'utf8');
-const secret=name=>vars.match(new RegExp('^'+name+'=([^\\r\\n]+)','m'))[1];
+const cloudSecrets=process.env.BAO_CLOUD_TEST==='1'?JSON.parse(fs.readFileSync(path.join(root,'.dev.vars.cloud.json'),'utf8')):null;
+const secret=name=>cloudSecrets?cloudSecrets[name]:vars.match(new RegExp('^'+name+'=([^\\r\\n]+)','m'))[1];
 const out=path.join(root,'.wrangler/qa');fs.mkdirSync(out,{recursive:true});
 (async()=>{
  const browser=await chromium.launch({channel:'msedge',headless:true});
@@ -71,10 +72,12 @@ const out=path.join(root,'.wrangler/qa');fs.mkdirSync(out,{recursive:true});
   await self.page.waitForFunction(price=>BaoCatalog.get('C3').price===price,row.price);
   const code='T'+Date.now().toString(36).toUpperCase();
   const upload=await admin.context.request.post(base+'/api/product-images',{multipart:{file:{name:'desktop-photo.png',mimeType:'image/png',buffer:fs.readFileSync(path.join(root,'public/bao-pork.png'))}}});
-  assert.equal(upload.status(),201);const photo=await upload.json();
+  const noImages=await self.page.evaluate(()=>BaoRuntime.imageUploads===false);
+  assert.equal(upload.status(),noImages?503:201);const photo=noImages?{}:await upload.json();
   assert.equal((await request(admin,'POST','/api/catalog',{code,category:'其他',dish:'三端实物图测试',fr:'Photo test',price:6.25,active:true,imageId:photo.imageId})).status,201);
-  await self.page.waitForFunction(code=>BaoCatalog.get(code)?.imageUrl,code);await pos.page.waitForFunction(code=>BaoCatalog.get(code)?.imageUrl,code);
-  assert.equal((await self.context.request.get(base+photo.imageUrl)).status(),200);
+  await self.page.waitForFunction(code=>BaoCatalog.get(code)?.active,code);await pos.page.waitForFunction(code=>BaoCatalog.get(code)?.active,code);
+  if(!noImages)assert.equal((await self.context.request.get(base+photo.imageUrl)).status(),200);
+  else {assert.equal(await admin.page.locator('#new-product-image').isDisabled(),true);assert.equal((await self.context.request.get(base+'/bao-pork.png')).status(),200);}
   const product=(await request(admin,'GET','/api/catalog')).body.products.find(p=>p.code===code);
   assert.equal((await request(admin,'DELETE','/api/catalog',{code,revision:product.revision})).status,200);
   await self.page.waitForFunction(code=>!BaoCatalog.get(code)?.active,code);

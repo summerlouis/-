@@ -1,5 +1,10 @@
 (() => {
   const mock=window.BaoRuntime?.mode==='mock',page=document.body.dataset.page;
+  if(page==='admin' && window.BaoRuntime?.imageUploads===false){
+    const disableUploads=()=>{document.querySelectorAll('[data-select-image], [data-image-input], #new-product-image').forEach(el=>{el.disabled=true;el.title='当前测试环境未启用图片上传'});};
+    disableUploads();new MutationObserver(disableUploads).observe(document.querySelector('main')||document.body,{childList:true,subtree:true});
+    const help=document.querySelector('#new-product-image-help');if(help)help.textContent='当前测试环境暂不上传新图片，现有菜单图片正常显示。';
+  }
   if (mock) {
     const banner=document.createElement('p');banner.className='mock-banner';banner.textContent='模拟测试 · 不会扣款 · 不计入真实营业收入';document.querySelector('main')?.prepend(banner);
     if(page==='self'){

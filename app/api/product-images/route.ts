@@ -8,7 +8,7 @@ export async function POST(request: Request) {
   if (!userId) return json({error:'请先登录后上传图片'},401);
   const origin=request.headers.get('origin');
   if (origin && origin!==new URL(request.url).origin) return json({error:'请求来源无效'},403);
-  if (!env.BUCKET) return json({error:'图片存储暂不可用，请稍后重试'},503);
+  if (!env.BUCKET) return json({error:'当前测试环境未启用图片上传，现有菜单图片仍可使用'},503);
   const contentType=request.headers.get('content-type')||'';
   if (!contentType.toLowerCase().startsWith('multipart/form-data;')) return json({error:'请选择 JPG、PNG 或 WebP 图片'},415);
   const maxRequest=MAX_IMAGE_BYTES+64*1024;

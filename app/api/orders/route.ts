@@ -117,6 +117,10 @@ export async function PATCH(req:Request){
   if(!['paid','done'].includes(order.status)||next[order.kitchenStatus||'new']!==data.next)return json({error:'订单状态已变化'},409);
   order.kitchenStatus=data.next;action='厨房状态：'+data.next;
   if(data.next==='complete')order.status='done';
+ }else if(data.action==='cancel'){
+  if(!access.mock||order.paymentMode!=='mock'||!['admin','cashier'].includes(access.role))return json({error:'仅收银或管理设备可取消模拟订单'},403);
+  if(!['pending','paid'].includes(order.status)||order.kitchenStatus==='complete')return json({error:'该订单已结束，不能重复取消'},409);
+  order.status='cancelled';order.kitchenStatus='cancelled';order.cancelledAt=now;order.refundAmount=0;action='收银取消本次模拟订单，厨房同步停止制作';
  }else if(data.action==='refund'||data.action==='void'){
   if(!['paid','done'].includes(order.status)&&!(data.action==='void'&&order.status==='pending'))return json({error:'该订单已取消、作废或尚未付款'},409);
   order.status=data.action==='refund'?'cancelled':'voided';order.refundAmount=Math.round((Number(order.paidTotal)+(order.corrections||[]).reduce((sum:number,c:{amount:number})=>sum+Number(c.amount||0),0))*100)/100;order.refundedAt=now;action=data.action==='refund'?'登记退款':'作废订单';

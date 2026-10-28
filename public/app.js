@@ -232,7 +232,7 @@ function showOrderSummary(message = '') {
 }
 
 function receiptStatus(order) {
-  if (order.status === 'cancelled') return '已登记退款';
+  if (order.status === 'cancelled') return order.cancelledAt?'已取消':'已登记退款';
   if (order.status === 'voided') return '已作废';
   if (order.status === 'done' || order.kitchenStatus === 'complete') return '已取餐';
   if (['paid', 'done'].includes(order.status)) return order.kitchenStatus === 'ready' ? '可以取餐' : order.kitchenStatus==='making'?'制作中':order.isTest?'已模拟付款':'已付款';
@@ -246,7 +246,7 @@ function renderReceipt() {
   entry.textContent = `查看刚才的订单 · ${receiptStatus(lastOrder)}`;
   const order = lastOrder;
   const paid = ['paid', 'done'].includes(order.status), closed = ['voided', 'cancelled'].includes(order.status);
-  document.querySelector('#receipt-title').textContent = closed ? (order.status === 'cancelled' ? '订单已登记退款' : '订单已作废') : paid ? `订单${receiptStatus(order)}` : (order.isTest?'订单已提交，待模拟付款':'订单已提交，待柜台付款');
+  document.querySelector('#receipt-title').textContent = closed ? (order.status === 'cancelled' ? (order.cancelledAt?'订单已取消':'订单已登记退款') : '订单已作废') : paid ? `订单${receiptStatus(order)}` : (order.isTest?'订单已提交，待模拟付款':'订单已提交，待柜台付款');
   document.querySelector('#receipt-instructions').textContent = closed ? '请联系收银员核对，勿为此订单再次付款。如需购买，请重新点单。' : paid ? (order.kitchenStatus === 'ready' ? '餐品已备好，请向店员出示取餐号。' : order.status === 'done' || order.kitchenStatus === 'complete' ? '本单已完成取餐，感谢光临。' : '请留意取餐屏幕 · Merci d’attendre votre numéro') : (order.isTest?'点击下方模拟付款后安排制作，不会扣款。':'请向收银员出示订单号，付款后安排制作。');
   document.querySelector('#pickup-label').textContent = paid ? '取餐号 · NUMÉRO' : '订单号 · NUMÉRO';
   document.querySelector('#pickup-number').textContent = order.pickupNumber || order.id;

@@ -58,6 +58,14 @@ const out=path.join(root,'.wrangler/qa');fs.mkdirSync(out,{recursive:true});
   const posOrder=await pos.page.evaluate(()=>BaoOrders.all().findLast(o=>o.source==='pos'&&o.tableNumber==='08'));
   assert.equal(posOrder.paidTotal,0);assert.equal(posOrder.payment,'模拟付款');
   await kitchen.page.locator('[data-id="'+posOrder.id+'"]').waitFor();
+  await pos.page.locator('[data-cancel-order="'+posOrder.id+'"]').click();
+  await kitchen.page.waitForFunction(id=>!document.querySelector('[data-id="'+id+'"]'),posOrder.id);
+  await pos.page.locator('[data-order-filter="all"]').click();
+  await pos.page.waitForFunction(id=>document.querySelector('[data-live-order="'+id+'"]').textContent.includes('已取消'),posOrder.id);
+  const cancelled=(await request(pos,'GET','/api/orders')).body.orders.find(o=>o.id===posOrder.id);
+  assert.equal(cancelled.status,'cancelled');assert.equal(cancelled.kitchenStatus,'cancelled');assert.equal(cancelled.refundAmount,0);
+  assert.equal((await request(pos,'PATCH','/api/orders',{id:posOrder.id,revision:cancelled.revision,action:'cancel'})).status,409);
+  assert.equal((await request(kitchen,'PATCH','/api/orders',{id:posOrder.id,revision:cancelled.revision,action:'kitchen',next:'making'})).status,409);
   // Disconnect/reconnect and read the latest durable state.
   await self.context.setOffline(true);await self.context.setOffline(false);await self.page.reload();await self.page.waitForFunction(()=>BaoOrders.ready());
   await self.page.locator('#last-order-button').click();await self.page.waitForFunction(()=>document.querySelector('#receipt-title').textContent.includes('已取餐'));

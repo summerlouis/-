@@ -3,7 +3,7 @@
   window.baoOrderId = () => 'BD-' + Array.from(crypto.getRandomValues(new Uint8Array(16)), n => n.toString(16).padStart(2,'0')).join('');
   if (!window.BaoRuntime?.events) return;
   let socket, retry, heartbeat, attempt = 0, stopped = false, refreshAgain = false, refreshing = false;
-  const show = text => {const el=document.querySelector('#realtime-status');if(el)el.textContent=text};
+  const show = text => {const el=document.querySelector('#realtime-status');if(el){el.textContent=text;el.dataset.state=text==='即时同步已连接'?'online':navigator.onLine?'connecting':'offline'}};
   async function refresh() {
     if (refreshing) {refreshAgain=true;return}
     refreshing=true;

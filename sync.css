@@ -1,1 +1,19 @@
 .mock-banner{padding:10px 14px;border:1px solid #f0cc7d;background:#fff5dc;border-radius:10px;color:#73501a;font-size:14px;margin:0 0 16px}.table-field{display:grid;gap:6px;margin:12px 0;color:#163f72;font-weight:700}.table-field input{box-sizing:border-box;width:100%;min-width:0;padding:11px;border:1px solid #bcd4ea;border-radius:9px;font:inherit;background:#fff;color:#163f72}.table-field small{font-size:12px;font-weight:400}.table-field[hidden]{display:none}.live-orders{margin-top:20px}.live-order{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:13px 0;border-bottom:1px solid #dfebf5}.live-order strong{margin-left:auto}.live-order span{color:#466c98}#mock-pay-receipt{margin:10px 0;width:100%;padding:14px;border:0;border-radius:10px;background:#f3cd7d;color:#15396b;font:inherit;font-weight:800;cursor:pointer}#mock-pay-message{color:#a13d28}#realtime-status{font-size:13px;color:#376b5d}.device-form{max-width:430px;margin:8vh auto;padding:24px}.device-form input{box-sizing:border-box;width:100%;padding:12px;margin:12px 0;border:1px solid #bcd4ea;border-radius:9px}.device-form button{width:100%;margin:10px 0}
+
+/* Touch-friendly refinements; retain the existing palette and layout. */
+button,a,input{touch-action:manipulation}
+button:focus-visible,a:focus-visible,input:focus-visible{outline:3px solid #2976b9;outline-offset:3px}
+button:disabled{cursor:not-allowed;opacity:.55}
+#realtime-status{display:flex;align-items:center;gap:8px;padding:9px 12px;border-radius:9px;background:#edf7f1;line-height:1.5}
+#realtime-status::before{content:'';width:8px;height:8px;border-radius:50%;background:currentColor;flex-shrink:0}
+#realtime-status[data-state=connecting]{background:#fff4d9;color:#76520e}
+#realtime-status[data-state=offline]{background:#fff0ed;color:#a02d24;font-weight:700}
+.order-filters{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:14px 0}
+.order-filters [aria-pressed=true]{background:#123f72;color:#fff;border-color:#123f72}
+#live-order-count{font-size:13px;color:#526a85;margin-left:auto}
+.live-order{border-left:4px solid #b4c8df;padding:12px;border-radius:8px;margin:8px 0;background:#f7faff}
+.live-order[data-order-state=pending]{border-left-color:#d29520}.live-order[data-order-state=making]{border-left-color:#3478ba}.live-order[data-order-state=ready]{border-left-color:#23815a}
+.live-order span{font-weight:700}.ticket h3{font-size:24px}.ticket p{line-height:1.8}.ticket .button{min-height:48px;width:100%;font-size:16px}
+.kitchen-column>.eyebrow{display:flex;align-items:center;justify-content:space-between;gap:8px}
+dialog{max-height:calc(100dvh - 32px);overflow-y:auto;overscroll-behavior:contain}
+@media(max-width:768px){.bar nav{display:flex;flex-wrap:wrap;gap:8px}.bar nav a,.bar nav button,.order-filters button{min-height:44px;display:inline-flex;align-items:center;justify-content:center}.mock-banner{font-size:12px;padding:8px 10px;margin-bottom:10px}.live-order strong{margin-left:0;width:100%}.table-field input{font-size:16px;min-height:46px}body[data-page=self] dialog .close{min-width:44px;min-height:44px}#live-order-count{width:100%;margin-left:0}}

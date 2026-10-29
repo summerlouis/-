@@ -404,9 +404,11 @@ function syncMenu() {
       const name = document.createElement('strong'); name.textContent = product.dish + (portion(product) ? ' · 9个' : '');
       const fr = document.createElement('small'); fr.textContent = product.fr + (portion(product) ? ' · 9 pièces' : '');
       const price = document.createElement('b'); price.textContent = euro(product.price);
-      card.append(label, name, fr);
+      const info = document.createElement('div'); info.className = 'product-info';
+      const names = document.createElement('div'); names.className = 'product-names'; names.append(name, fr);
+      info.append(names, price); card.append(label, info);
 
-      card.append(price);
+
       card.onclick = () => chooseProduct(card);
       grid.append(card);
     }

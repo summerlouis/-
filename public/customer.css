@@ -127,3 +127,5 @@ body[data-page="self"] .sync-tools button { border:0; background:transparent; co
 
 /* Keep bilingual names close, including wrapped French lines. */
 .product-card .product-names strong,.product-card .product-names small{line-height:1.18}.product-card .product-names small{margin-top:1px}.product-info{padding-top:8px;padding-bottom:1px}
+
+.product-card .product-names strong{font-size:16px}

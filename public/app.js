@@ -88,6 +88,7 @@ function updateChoice(message = choiceNotice) {
 
 function openChoice(product, item = null) {
   if (locked() || !product?.active) return;
+  if(!item&&window.BaoVariantPicker?.open(product,items=>{if(locked())throw Error('订单正在提交，请稍后');for(const value of items){const same=cart.find(x=>itemKey(x)===itemKey(value));if((same?.qty||0)+value.qty>999)throw Error('同一规格最多 999 份')}for(const value of items){const same=cart.find(x=>itemKey(x)===itemKey(value));if(same)same.qty+=value.qty;else cart.push(value)}renderCart();feedback('已按馅料和做法分别加入购物车')}))return;
   selection = {...product};
   choiceNotice = '';
   editingKey = item ? itemKey(item) : null;

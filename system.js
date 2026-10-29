@@ -144,6 +144,7 @@ function initPOSAdvanced(){
  function begin(code){
   if(locked())return;
   const product=productByCode(code);if(!product||!product.active){alert('未找到可售商品编码 / Code indisponible');return}
+  if(window.BaoVariantPicker?.open(product,items=>{if(locked())throw Error('订单正在提交，请稍后');for(const item of items){const same=cart.find(x=>x.code===item.code&&x.filling===item.filling&&x.style===item.style);if((same?quantity(same):0)+item.qty>999)throw Error('同一规格最多 999 份')}for(const item of items){const same=cart.find(x=>x.code===item.code&&x.filling===item.filling&&x.style===item.style);if(same)same.qty+=item.qty;else cart.push(item)}input.value='';render()}))return;
   selection={product};if(!cookings[product.category]){addItem();return}
   step.textContent='步骤 1 / 2 · Choisir la garniture';title.textContent=`${product.code} · ${product.dish}`;subtitle.textContent=product.fr;
   choices(({A1:[['韭菜鸡蛋','Poireau et œuf']],A2:[['猪肉白菜','Porc et chou'],['鲜肉','Porc'],['韭菜猪肉','Porc et poireau']],A3:[['红油牛肉包','Bao au bœuf pimenté'],['牛肉鲜肉包','Bao au bœuf frais']]}[product.code]||fillings),(zh,fr)=>{selection.filling=zh;selection.fillingFr=fr;chooseCooking()});dialog.showModal();

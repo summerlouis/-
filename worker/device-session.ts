@@ -1,5 +1,5 @@
 export type Role = 'admin' | 'cashier' | 'kitchen' | 'customer';
-export type Session = {role: Role; customerId: string; store: string; expires: number};
+export type Session = {deviceId?: string; role: Role; customerId: string; store: string; expires: number};
 const name = 'bao_device_session';
 const encode = (bytes: Uint8Array) => btoa(String.fromCharCode(...bytes)).replaceAll('+', '-').replaceAll('/', '_').replace(/=+$/, '');
 const decode = (value: string) => Uint8Array.from(atob(value.replaceAll('-', '+').replaceAll('_', '/')), c => c.charCodeAt(0));
@@ -23,7 +23,7 @@ export async function sessionCookie(session: Session, request: Request, env: Clo
 }
 
 export function newSession(role: Role, store: string, customerId = crypto.randomUUID()): Session {
-  return {role, store, customerId, expires: Date.now() + 30 * 24 * 3600 * 1000};
+  return {deviceId:role==='customer'?undefined:crypto.randomUUID(),role, store, customerId, expires: Date.now() + 30 * 24 * 3600 * 1000};
 }
 
 export async function matchesCode(supplied: string, expected?: string) {

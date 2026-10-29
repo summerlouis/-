@@ -40,7 +40,7 @@ function renderProductAdmin(){
     finally{deleteButton.disabled=false}
    };
    const toggle=row.querySelector('[data-toggle]');
-   toggle.onclick=async()=>{toggle.disabled=true;try{const code=toggle.dataset.toggle,current=BaoCatalog.get(code);if(!current)return;const active=!current.active;await BaoCatalog.update(code,{active});audit(active?'商品上架':'商品下架',code);initAdminDelete()}catch(error){document.querySelector('#price-message').textContent=error.message}finally{toggle.disabled=false}};
+   toggle.onclick=async()=>{toggle.disabled=true;try{const code=toggle.dataset.toggle,current=BaoCatalog.get(code);if(!current)return;const active=!(current.listed??current.active);await BaoCatalog.update(code,{active});audit(active?'商品上架':'商品下架',code);initAdminDelete()}catch(error){document.querySelector('#price-message').textContent=error.message}finally{toggle.disabled=false}};
    const photoButton=row.querySelector('[data-select-image]'),photoInput=row.querySelector('[data-image-input]'),photoMessage=row.querySelector('.photo-message');
    photoButton.onclick=()=>{if(row.dataset.photoBusy!=='true')photoInput.click()};
    photoInput.onchange=async()=>{
@@ -66,7 +66,8 @@ function renderProductAdmin(){
   if(form.dataset.editing!=='true'&&form.dataset.saving!=='true'){
    form.querySelector('input').value=Number(product.price).toFixed(2);form.dataset.revision=String(product.revision||0);
   }
-  row.querySelector('[data-toggle]').textContent=product.active?'下架':'上架';
+  let sold=row.querySelector('[data-soldout]');if(!sold){sold=document.createElement('button');sold.type='button';sold.className='button';sold.dataset.soldout=product.code;row.querySelector('.product-actions').append(sold);sold.onclick=async()=>{sold.disabled=true;try{const latest=BaoCatalog.get(sold.dataset.soldout);await BaoCatalog.update(latest.code,{soldOut:!latest.soldOut});}catch(e){document.querySelector('#price-message').textContent=e.message}finally{sold.disabled=false}}}sold.textContent=product.soldOut?'恢复销售':'标记售罄';sold.disabled=!(product.listed??product.active);row.querySelector('.product-summary b').textContent=product.code+' · '+product.dish+(product.soldOut?' · 售罄':'');
+  row.querySelector('[data-toggle]').textContent=(product.listed??product.active)?'下架':'上架';
   row.querySelector('[data-delete-product]').dataset.revision=String(product.revision||0);
  }
  if(!list.length)holder.innerHTML='<p class="empty">暂无商品，可在上方录入新商品。</p>';
@@ -113,7 +114,7 @@ function initPOSAdvanced(){
   else if(!submitting)cart=BaoCatalog.reprice(cart);
   sessionStorage.setItem('baoPosCart',JSON.stringify(cart));
   const query=document.querySelector('.catalog-search')?.value.trim().toLowerCase()||'';
-  catalog.innerHTML=products().filter(item=>item.active).map(item=>{const image=BaoCatalog.imageFor(item);return `<button class="product" data-code="${escape(item.code)}">${image?`<span class="pos-product-photo ${BaoCatalog.customImage(item)?'':'default-product-photo'}" data-category="${escape(item.category)}"><img src="${escape(image)}" alt="" loading="lazy"></span>`:''}<b>${escape(item.code)}</b><strong>${escape(item.dish)}</strong><small>${escape(item.fr)} · ${money(item.price)}</small></button>`}).join('');
+  catalog.innerHTML=products().filter(item=>item.active||item.soldOut).map(item=>{const image=BaoCatalog.imageFor(item);return `<button class="product" ${item.soldOut?'disabled':''} data-code="${escape(item.code)}">${item.soldOut?'<span class="soldout-label">售罄</span>':''}${image?`<span class="pos-product-photo ${BaoCatalog.customImage(item)?'':'default-product-photo'}" data-category="${escape(item.category)}"><img src="${escape(image)}" alt="" loading="lazy"></span>`:''}<b>${escape(item.code)}</b><strong>${escape(item.dish)}</strong><small>${escape(item.fr)} · ${money(item.price)}</small></button>`}).join('');
   catalog.querySelectorAll('img').forEach(image=>image.onerror=()=>{image.parentElement.hidden=true});
   catalog.querySelectorAll('button').forEach(button=>{button.onclick=()=>begin(button.dataset.code);button.hidden=!button.textContent.toLowerCase().includes(query)});
   document.querySelector('#cart-count').textContent=`${cart.reduce((sum,item)=>sum+quantity(item),0)} 件`;

@@ -83,7 +83,7 @@ function updateChoice(message = choiceNotice) {
   document.querySelector('#choice-subtotal').textContent = validQuantity ? euro(selection.price * quantity) : '—';
   document.querySelector('#choice-add').disabled = locked() || !latest?.active || !complete || !validQuantity;
   document.querySelector('#choice-add').textContent = editingKey ? '保存修改' : '加入购物车';
-  document.querySelector('#choice-message').textContent = message || (!latest?.active ? '此商品已下架，请选择其他商品。' : !validQuantity ? '请输入 1 至 999 的整数数量。' : !complete ? '请选择馅料和做法，再加入购物车。' : '');
+  document.querySelector('#choice-message').textContent = message || (!latest?.active ? latest?.soldOut?'此商品已售罄，请选择其他商品。':'此商品已下架，请选择其他商品。' : !validQuantity ? '请输入 1 至 999 的整数数量。' : !complete ? '请选择馅料和做法，再加入购物车。' : '');
 }
 
 function openChoice(product, item = null) {
@@ -202,7 +202,7 @@ function setCategory(category, clearSearch = false) {
   let visible = 0;
   document.querySelectorAll('.product-card').forEach(card => {
     const product = BaoCatalog.get(card.dataset.code);
-    const matches = product?.active && (query ? words.every(word => normalise([product.code, product.dish, product.fr, product.category].join(' ')).includes(word)) : category === '全部' || product.category === category);
+    const matches = (product?.active || product?.soldOut) && (query ? words.every(word => normalise([product.code, product.dish, product.fr, product.category].join(' ')).includes(word)) : category === '全部' || product.category === category);
     card.hidden = !matches;
     if (matches) visible++;
   });
@@ -379,6 +379,7 @@ function syncMenu() {
       card.dataset.category = product.category;
       card.dataset.price = product.price;
       card.disabled = !product.active;
+      if(product.soldOut){const badge=document.createElement('span');badge.className='soldout-label';badge.textContent='售罄 · Épuisé';card.append(badge)}
       const customSource = BaoCatalog.customImage(product);
       const source = customSource || productImages.get(product.code);
       if (source) {

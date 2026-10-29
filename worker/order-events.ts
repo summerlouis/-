@@ -3,6 +3,7 @@ import { DurableObject } from 'cloudflare:workers';
 export class OrderEvents extends DurableObject<Cloudflare.Env> {
   async fetch(request: Request) {
     const path = new URL(request.url).pathname;
+    if(path==='/revoke'){const data=await request.json() as {id:string};for(const socket of this.ctx.getWebSockets()){const meta=socket.deserializeAttachment();if(meta.deviceId===data.id||(!meta.deviceId&&meta.role!=='customer'))socket.close(1008,'Device revoked')}return Response.json({ok:true})}
     if (path === '/notify' && request.method === 'POST') {
       const event = await request.json() as {kind: string; customerId?: string};
       for (const socket of this.ctx.getWebSockets()) {
@@ -17,7 +18,7 @@ export class OrderEvents extends DurableObject<Cloudflare.Env> {
     const pair = new WebSocketPair();
     const [client, server] = Object.values(pair);
     this.ctx.acceptWebSocket(server);
-    server.serializeAttachment({role: request.headers.get('x-bao-role'), customerId: request.headers.get('x-bao-customer-id') || ''});
+    server.serializeAttachment({deviceId:request.headers.get('x-bao-device-id'),role: request.headers.get('x-bao-role'), customerId: request.headers.get('x-bao-customer-id') || ''});
     server.send(JSON.stringify({kind: 'connected'}));
     return new Response(null, {status: 101, webSocket: client});
   }

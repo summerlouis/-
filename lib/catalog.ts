@@ -8,13 +8,13 @@ export function validPrice(price:unknown):price is number {
 export async function catalog(userId:string) {
   const [custom, overrides] = await Promise.all([
     env.DB!.prepare('SELECT code,category,dish,fr,cents,active,image_id FROM catalog_products WHERE user_id=? ORDER BY created_at,code').bind(userId).all<{code:string,category:string,dish:string,fr:string,cents:number,active:number,image_id:string|null}>(),
-    env.DB!.prepare('SELECT code,cents,active,revision,deleted,image_id FROM product_prices WHERE user_id=?').bind(userId).all<{code:string,cents:number,active:number,revision:number,deleted:number,image_id:string|null}>(),
+    env.DB!.prepare('SELECT code,cents,active,revision,deleted,image_id,sold_out FROM product_prices WHERE user_id=?').bind(userId).all<{code:string,cents:number,active:number,revision:number,deleted:number,image_id:string|null,sold_out:number}>(),
   ]);
   const prices = new Map(overrides.results.map(row => [row.code,row]));
   const products = [...defaults.map(p=>({...p,imageId:null as string|null})), ...custom.results.map(({cents,active,image_id,...p}) => ({...p,price:cents/100,active:Boolean(active),imageId:image_id}))];
   return products.map(p => {
     const row = prices.get(p.code);
     const imageId=row?row.image_id:p.imageId;
-    return {...p,imageId,imageUrl:imageId?'/api/product-images/'+imageId:null,price:row?row.cents/100:p.price,active:row?.deleted?false:row?Boolean(row.active):p.active,revision:row?.revision??0,deleted:Boolean(row?.deleted)};
+    return {...p,soldOut:Boolean(row?.sold_out),listed:row?.deleted?false:row?Boolean(row.active):p.active,imageId,imageUrl:imageId?'/api/product-images/'+imageId:null,price:row?row.cents/100:p.price,active:row?.deleted||row?.sold_out?false:row?Boolean(row.active):p.active,revision:row?.revision??0,deleted:Boolean(row?.deleted)};
   });
 }

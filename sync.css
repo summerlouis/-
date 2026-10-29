@@ -26,3 +26,5 @@ dialog{max-height:calc(100dvh - 32px);overflow-y:auto;overscroll-behavior:contai
 #panel-products .product-summary{min-width:0}#panel-products .product-summary>div{min-width:0}#panel-products .product-summary b,#panel-products .product-summary small{overflow-wrap:anywhere}
 #panel-products .product-actions{display:flex;flex-wrap:wrap;gap:6px;margin-top:auto}#panel-products .price-editor{margin:0}#panel-products .photo-message:empty{display:none}
 @media(max-width:600px){#panel-products #product-admin{grid-template-columns:1fr}#panel-products .product-admin{padding:12px}}
+
+.soldout-label{display:block;padding:6px 10px;background:#fff0dc;color:#8a4500;font-weight:800}.product-card:disabled{opacity:.7}#device-list .live-order>div{overflow-wrap:anywhere;min-width:0}#rotate-codes{display:flex;gap:10px;flex-wrap:wrap}

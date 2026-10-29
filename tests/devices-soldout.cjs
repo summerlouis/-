@@ -1,0 +1,16 @@
+const {chromium}=require(process.env.BAO_PLAYWRIGHT_MODULE||'playwright'),fs=require('fs'),assert=require('assert/strict');
+(async()=>{const b=await chromium.launch({channel:'msedge'});const base=process.env.BAO_TEST_URL||'http://127.0.0.1:5173',cloud=base.startsWith('https'),v=fs.readFileSync('.dev.vars','utf8'),codes=cloud?JSON.parse(fs.readFileSync('.dev.vars.cloud.json')):Object.fromEntries(v.trim().split(/\r?\n/).map(s=>s.split('=')));try{
+ const admin=await b.newContext(),cash=await b.newContext(),customer=await b.newContext();
+ const login=async(c,code)=>c.request.post(base+'/api/device-session',{data:{code}});assert.equal((await login(admin,codes.ADMIN_DEVICE_CODE)).status(),200);assert.equal((await login(cash,codes.CASHIER_DEVICE_CODE)).status(),200);await customer.request.get(base+'/');
+ const page=await cash.newPage();await page.goto(base+'/pos');await page.waitForFunction(()=>BaoOrders.ready());
+ const mine=await (await admin.request.get(base+'/api/devices')).json();const list=mine.devices;assert.ok(list.some(d=>d.role==='cashier'&&!d.revoked));assert.equal((await cash.request.get(base+'/api/devices')).status(),403);
+ const target=list.filter(d=>d.role==='cashier'&&!d.revoked).sort((a,b)=>b.created-a.created)[0];assert.equal((await admin.request.post(base+'/api/devices',{data:{action:'revoke',id:mine.current}})).status(),400);
+ await admin.request.post(base+'/api/devices',{data:{action:'revoke',id:target.id}});assert.equal((await cash.request.get(base+'/api/orders')).status(),401);await page.reload();assert.ok(page.url().includes('device.html'));
+ if(!cloud){const rotated=await (await admin.request.post(base+'/api/devices',{data:{action:'rotate',role:'kitchen'}})).json();const k=await b.newContext();assert.equal((await login(k,codes.KITCHEN_DEVICE_CODE)).status(),401);assert.equal((await login(k,rotated.code)).status(),200);}
+ const read=async()=> (await (await admin.request.get(base+'/api/catalog')).json()).products.find(p=>p.code==='C1');const original=await read();
+ try{const r=await admin.request.patch(base+'/api/catalog',{data:{code:'C1',soldOut:true,revision:original.revision}});assert.equal(r.status(),200);let current=await read();assert.equal(current.active,false);assert.equal(current.listed,true);assert.equal(current.soldOut,true);
+ const order=await customer.request.post(base+'/api/orders',{data:{order:{id:'SOLD-'+crypto.randomUUID(),source:'self',service:'堂食',tableNumber:'QA',items:[{code:'C1',qty:1,price:3.5,dish:'红豆粥'}]}}});assert.equal(order.status(),409);
+ const ui=await admin.newPage();await ui.goto(base+'/admin');await ui.locator('#tab-products').click();await ui.waitForFunction(()=>BaoCatalog.get('C1')?.soldOut);assert.equal(await ui.locator('[data-soldout=C1]').innerText(),'恢复销售');await ui.locator('#tab-devices').click();await ui.waitForSelector('#device-list article');
+ }finally{const current=await read();await admin.request.patch(base+'/api/catalog',{data:{code:'C1',soldOut:original.soldOut,revision:current.revision}})}
+ console.log('PASS: device registry, role restrictions, revocation, '+(!cloud?'code rotation, ':'')+'sold-out/recovery, server rejection and admin UI');
+ }finally{await b.close()}})().catch(e=>{console.error(e);process.exitCode=1});

@@ -1,3 +1,4 @@
+import {deviceValid,manageDevices,hashCode} from './devices';
 import * as orders from '../app/api/orders/route';
 import * as catalog from '../app/api/catalog/route';
 import * as imageUpload from '../app/api/product-images/route';
@@ -19,7 +20,8 @@ export default {
       if (origin && origin !== url.origin) return json({error:'请求来源无效'},403);
       if (request.headers.get('sec-fetch-site') === 'cross-site') return json({error:'请求来源无效'},403);
     }
-    const previous = await readSession(request, env);
+    let previous = await readSession(request, env);
+    if(previous&&!await deviceValid(previous,request,env))previous=null;
     let session = previous || newSession('customer', env.STORE_ID);
     const secureResponse = async (response: Response) => {
       if (response.status === 101) return response;
@@ -29,16 +31,18 @@ export default {
       if (!previous || session !== previous) next.headers.set('Set-Cookie',await sessionCookie(session,request,env));
       return next;
     };
+    if(path==='/api/devices')return manageDevices(request,env,session);
     if (path === '/api/device-session') {
-      if (request.method === 'DELETE') { session = newSession('customer',env.STORE_ID); return secureResponse(json({ok:true})); }
+      if (request.method === 'DELETE') { if(session.deviceId)await env.DB!.prepare('UPDATE device_registry SET revoked=1 WHERE store=? AND id=?').bind(session.store,session.deviceId).run(); session = newSession('customer',env.STORE_ID); return secureResponse(json({ok:true})); }
       if (request.method !== 'POST') return json({error:'Method not allowed'},405);
       let code = ''; try { code = String((await request.json() as {code?:unknown}).code || '').trim(); } catch { return json({error:'请求格式错误'},400); }
       if (code.length > 256) return json({error:'设备配对码无效'},401);
       let role: Role | null = null;
       for (const [candidate,expected] of [['admin',env.ADMIN_DEVICE_CODE],['cashier',env.CASHIER_DEVICE_CODE],['kitchen',env.KITCHEN_DEVICE_CODE]] as const) {
-        if (await matchesCode(code,expected)) role = candidate;
+        const override=await env.DB!.prepare('SELECT hash FROM pairing_codes WHERE store=? AND role=?').bind(env.STORE_ID,candidate).first<{hash:string}>();
+        if (override ? await hashCode(code)===override.hash : await matchesCode(code,expected)) role = candidate;
       }
-      if (!role) return json({error:'设备配对码无效，请核对启动窗口中的对应配对码'},401);
+      if (!role) return json({error:'设备配对码无效，请向店主管理员获取最新配对码'},401);
       session = newSession(role,env.STORE_ID,session.customerId);
       return secureResponse(json({ok:true,role}));
     }
@@ -50,7 +54,7 @@ export default {
     const headers = new Headers(request.headers);
     for (const name of [...headers.keys()]) if (name.startsWith('oai-authenticated-user-') || name.startsWith('x-bao-')) headers.delete(name);
     headers.set('oai-authenticated-user-id','store:'+env.STORE_ID);
-    headers.set('x-bao-role',session.role); headers.set('x-bao-customer-id',session.customerId);
+    headers.set('x-bao-device-id',session.deviceId||'');headers.set('x-bao-role',session.role); headers.set('x-bao-customer-id',session.customerId);
     let requestBody: ArrayBuffer | undefined;
     if (request.body) {
       const reader=request.body.getReader(), chunks:Uint8Array[]=[];let size=0;

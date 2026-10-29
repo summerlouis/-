@@ -14,7 +14,7 @@
       document.querySelector('#payment-dialog .modal > small').textContent='这是模拟测试，不会扣款。提交后点击“模拟付款”，厨房即可接单。';
     }
     if(page==='pos'){
-      document.querySelector('.payment').innerHTML='<button class="button pay selected" data-payment="模拟付款">模拟付款 · 不扣款</button>';
+      document.querySelector('.payment').innerHTML='<p class="note">付款方式：模拟付款（不扣款）<br>添加商品后，点击下方按钮提交订单。</p>';
       document.querySelector('.hint').textContent='模拟测试：选择商品、填写桌号后保存，订单自动发送至厨房，不计入真实营业收入。';
     }
   }

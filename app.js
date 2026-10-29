@@ -170,7 +170,7 @@ function renderCart() {
   });
   document.querySelector('#cart-total').textContent = euro(total());
   document.querySelector('#pay-button').disabled = paymentBusy || (!cart.length && !pending);
-  document.querySelector('#pay-button').textContent = pending ? '核对上次订单' : (window.BaoRuntime?.mode==='mock'?'确认订单，模拟付款':'确认订单，到柜台付款');
+  document.querySelector('#pay-button').textContent = !cart.length&&!pending ? '请先选择商品加入购物车' : pending ? '核对上次订单' : (window.BaoRuntime?.mode==='mock'?'确认订单，模拟付款':'确认订单，到柜台付款');
   document.querySelectorAll('.service-choice').forEach(button => {
     const active = button.dataset.service === service;
     button.classList.toggle('active', active);

@@ -1,4 +1,5 @@
+const target=new URL(location.href).searchParams.get('next');const deviceNames={'/pos':'收银设备','/kitchen':'厨房设备','/admin':'管理设备','/owner':'管理设备'};document.querySelector('h1').textContent=(deviceNames[target]||'店员设备')+'配对';document.querySelector('#show-code').onclick=event=>{const input=document.querySelector('#device-code'),show=input.type==='password';input.type=show?'text':'password';event.target.textContent=show?'隐藏配对码':'显示配对码';event.target.setAttribute('aria-pressed',String(show));};
 document.querySelector('#device-form').onsubmit=async event=>{
-  event.preventDefault();const button=event.target.querySelector('button'),message=document.querySelector('#device-message');button.disabled=true;
+  event.preventDefault();const button=event.target.querySelector('[type=submit]'),message=document.querySelector('#device-message');button.disabled=true;
   try{const response=await fetch('/api/device-session',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code:document.querySelector('#device-code').value})});const data=await response.json();if(!response.ok)throw Error(data.error);const next=new URL(location.href).searchParams.get('next');location.href=['/pos','/kitchen','/admin','/owner'].includes(next)?next:data.role==='kitchen'?'/kitchen':'/pos'}catch(error){message.textContent=error.message}finally{button.disabled=false}
 };

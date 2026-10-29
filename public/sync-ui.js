@@ -1,4 +1,12 @@
 (() => {
+
+  function confirmCleanup(count){return new Promise(resolve=>{
+    const dialog=document.createElement('dialog');dialog.className='cleanup-dialog';dialog.setAttribute('aria-labelledby','cleanup-title');dialog.setAttribute('aria-describedby','cleanup-description');
+    dialog.innerHTML='<form method="dialog"><button class="cleanup-close" value="cancel" aria-label="关闭 · Fermer">×</button><p class="cleanup-eyebrow">订单清理 · Confirmation</p><h2 id="cleanup-title">清理已结束的订单</h2><div class="cleanup-count">本次清理 <strong></strong> 笔模拟订单</div><p id="cleanup-description">清理已完成、已取消或已作废的模拟订单，包含往日记录。</p><p class="cleanup-keep">待付款、制作中及待取餐订单会保留，不影响厨房接单。</p><div class="cleanup-actions"><button class="button" value="cancel" autofocus>取消 · Annuler</button><button class="button cleanup-submit" value="confirm">确认清理 · Confirmer</button></div></form>';
+    dialog.querySelector('.cleanup-count strong').textContent=count;
+    dialog.addEventListener('close',()=>{const accepted=dialog.returnValue==='confirm';dialog.remove();resolve(accepted)},{once:true});
+    document.body.append(dialog);dialog.showModal();
+  })}
   const mock=window.BaoRuntime?.mode==='mock',page=document.body.dataset.page;
   if(page==='admin' && window.BaoRuntime?.imageUploads===false){
     const disableUploads=()=>{document.querySelectorAll('[data-select-image], [data-image-input], #new-product-image').forEach(el=>{el.disabled=true;el.title='当前测试环境未启用图片上传'});};
@@ -42,7 +50,7 @@
       const controls=document.createElement('div');controls.className='order-filters';controls.innerHTML='<button type="button" class="button danger" id="cleanup-orders">清理已结束的订单</button><span id="cleanup-message" role="status"></span>';document.querySelector('#admin-orders').before(controls);
       const button=controls.querySelector('button'),message=controls.querySelector('span');
       const call=async body=>{const response=await fetch('/api/orders',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const data=await response.json();if(!response.ok)throw Error(data.error||'清理失败');return data};
-      button.onclick=async()=>{button.disabled=true;try{const preview=await call({action:'cleanup-preview'});if(!preview.count){message.textContent='暂无可清理的已结束模拟订单';return}if(!confirm('将清理 '+preview.count+' 笔已完成、已取消或已作废的模拟订单（包含往日记录）。待付款及厨房进行中的订单会保留。确认清理？'))return;const result=await call({action:'cleanup',ids:preview.ids});await BaoOrders.refresh();message.textContent='已清理 '+result.count+' 笔模拟订单';}catch(error){message.textContent=error.message}finally{button.disabled=false}};
+      button.onclick=async()=>{button.disabled=true;try{const preview=await call({action:'cleanup-preview'});if(!preview.count){message.textContent='暂无可清理的已结束模拟订单';return}if(!await confirmCleanup(preview.count))return;const result=await call({action:'cleanup',ids:preview.ids});await BaoOrders.refresh();message.textContent='已清理 '+result.count+' 笔模拟订单';}catch(error){message.textContent=error.message}finally{button.disabled=false}};
     }
     if(page!=='pos')return;
     const panel=document.createElement('section');panel.className='panel live-orders';panel.innerHTML='<h2>三端订单状态</h2><p class="note">自动显示顾客与 POS 订单，桌号、金额及制作状态同步更新。</p><div class="order-filters" role="group" aria-label="订单范围"><button class="button" data-order-filter="active" aria-pressed="true">进行中</button><button class="button" data-order-filter="all" aria-pressed="false">今日全部</button><span id="live-order-count" role="status"></span></div><div id="pos-live-orders"></div>';document.querySelector('main').append(panel);

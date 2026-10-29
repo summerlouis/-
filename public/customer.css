@@ -135,3 +135,6 @@ body[data-page="self"] .sync-tools button { border:0; background:transparent; co
 
 /* Consistent centered menu cards. */
 .product-card .product-info{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:10px;padding:10px 10px 2px;min-height:76px;text-align:center}.product-card .product-names{text-align:center}.product-card .product-names strong{font-size:15px;font-weight:400;line-height:1.2;text-align:center}.product-card .product-names small{font-size:17px;font-weight:700;line-height:1.12;margin-top:2px;text-align:center}.product-card .product-info>b{font-size:26px;text-align:center;align-self:center}.product-card .product-photo{aspect-ratio:1.45;width:100%;flex-shrink:0}
+
+/* Left-align names while centering the whole text block vertically. */
+.product-card .product-info{display:flex;align-items:center;justify-content:space-between;text-align:left}.product-card .product-names{flex:1;min-width:0;text-align:left}.product-card .product-names strong,.product-card .product-names small{text-align:left}

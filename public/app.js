@@ -401,11 +401,11 @@ function syncMenu() {
         card.append(placeholder);
       }
       const label = document.createElement('i'); label.textContent = product.code;
-      const name = document.createElement('strong'); name.textContent = product.dish;
-      const fr = document.createElement('small'); fr.textContent = product.fr;
+      const name = document.createElement('strong'); name.textContent = product.dish + (portion(product) ? ' · 9个' : '');
+      const fr = document.createElement('small'); fr.textContent = product.fr + (portion(product) ? ' · 9 pièces' : '');
       const price = document.createElement('b'); price.textContent = euro(product.price);
       card.append(label, name, fr);
-      if (portion(product)) {const size = document.createElement('span'); size.className = 'product-portion'; size.textContent = portion(product); card.append(size)}
+
       card.append(price);
       card.onclick = () => chooseProduct(card);
       grid.append(card);

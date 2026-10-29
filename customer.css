@@ -129,3 +129,6 @@ body[data-page="self"] .sync-tools button { border:0; background:transparent; co
 .product-card .product-names strong,.product-card .product-names small{line-height:1.18}.product-card .product-names small{margin-top:1px}.product-info{padding-top:8px;padding-bottom:1px}
 
 .product-card .product-names strong{font-size:16px}
+
+/* Keep every photo at its existing aspect ratio regardless of text wrapping. */
+.product-card{display:flex;flex-direction:column;justify-content:flex-start;align-items:stretch}.product-card .product-photo{flex:0 0 auto;width:100%;aspect-ratio:1.45}.product-card .product-placeholder{flex-shrink:0}.product-card .product-info{flex:0 0 auto}.product-card .product-names small{line-height:1.08;margin-top:1px}.product-card .product-names strong{line-height:1.12}

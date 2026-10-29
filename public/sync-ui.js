@@ -43,7 +43,7 @@
   window.addEventListener('DOMContentLoaded',()=>{
     if(mock)document.querySelector('.sync-tools > span')?.replaceChildren(document.createTextNode('模拟测试版'));
     if(window.BaoRuntime?.events&&window.BaoRuntime.role!=='customer'){
-      const button=document.createElement('button');button.type='button';button.className='button';if(page==='kitchen')button.innerHTML='<span>退出设备配对</span><small lang="fr">Déconnecter</small>';else button.textContent='退出设备配对';button.onclick=async()=>{const response=await fetch('/api/device-session',{method:'DELETE'});if(response.ok)location.href='/';else alert('退出失败，请重试')};document.querySelector('header nav')?.append(button);
+      const button=document.createElement('button');button.type='button';button.className='button';if(['kitchen','pos','admin'].includes(page))button.innerHTML='<span>退出设备配对</span><small lang="fr">Déconnecter</small>';else button.textContent='退出设备配对';button.onclick=async()=>{const response=await fetch('/api/device-session',{method:'DELETE'});if(response.ok)location.href='/';else alert('退出失败，请重试')};document.querySelector('header nav')?.append(button);
     }
     if(page==='kitchen'&&mock)document.querySelector('.hint').textContent='模拟付款后进入厨房 · 按顺序操作：开始制作 → 待取餐 → 完成出餐';
     if(page==='admin'&&mock){

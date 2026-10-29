@@ -149,7 +149,7 @@ function renderCart() {
   const count = cart.reduce((sum, item) => sum + item.qty, 0);
   const holder = document.querySelector('#cart-items');
   document.querySelector('#cart-count').textContent = `${count} 件`;
-  holder.innerHTML = cart.length ? cart.map((item, index) => `<div class="cart-row"><div><strong><b>${escape(item.code)}</b> · ${escape(item.dish)}</strong><small>${escape(item.fr)}${item.filling ? ` · ${escape(item.filling)} / ${escape(item.fillingFr)} · ${escape(item.style)} / ${escape(item.styleFr)}` : ''}</small><small>${portion(item)}${portion(item) ? ' · ' : ''}${euro(item.price)} × ${item.qty}</small><button type="button" class="cart-edit" data-edit="${index}" ${locked() ? 'disabled' : ''}>修改选择 / Modifier</button></div><div><strong>${euro(item.price * item.qty)}</strong><div class="quantity"><button type="button" data-change="-1" data-index="${index}" aria-label="减少 ${escape(item.dish)} 数量" ${locked() ? 'disabled' : ''}>−</button><b>${item.qty}</b><button type="button" data-change="1" data-index="${index}" aria-label="增加 ${escape(item.dish)} 数量" ${locked() || item.qty >= 999 ? 'disabled' : ''}>＋</button><button type="button" class="remove" data-remove="${index}" aria-label="移除 ${escape(item.dish)}" ${locked() ? 'disabled' : ''}>删除</button></div></div></div>`).join('') : '<p class="empty">还没有选好？先看看菜单吧<br><small>Choisissez vos produits dans le menu</small></p>';
+  holder.innerHTML = cart.length ? cart.map((item, index) => `<div class="cart-row"><div><strong><b>${escape(item.code)}</b> · ${escape(item.dish)}</strong><small>${escape(item.fr)}${item.filling ? ` · ${escape(item.filling)} / ${escape(item.fillingFr)} · ${escape(item.style)} / ${escape(item.styleFr)}` : ''}</small><small>${portion(item)}${portion(item) ? ' · ' : ''}${euro(item.price)} × ${item.qty}</small><button type="button" class="cart-edit" data-edit="${index}" ${locked() ? 'disabled' : ''}>修改选择 / Modifier</button></div><div><strong>${euro(item.price * item.qty)}</strong><div class="quantity"><button type="button" data-change="-1" data-index="${index}" aria-label="减少 ${escape(item.dish)} 数量" ${locked() ? 'disabled' : ''}>−</button><b>${item.qty}</b><button type="button" data-change="1" data-index="${index}" aria-label="增加 ${escape(item.dish)} 数量" ${locked() || item.qty >= 999 ? 'disabled' : ''}>＋</button><button type="button" class="remove" data-remove="${index}" aria-label="移除 ${escape(item.dish)} / Retirer ${escape(item.fr || item.dish)}" ${locked() ? 'disabled' : ''}>移除 · Retirer</button></div></div></div>`).join('') : '<p class="empty">还没有选好？先看看菜单吧<br><small>Choisissez vos produits dans le menu</small></p>';
   holder.querySelectorAll('[data-change]').forEach(button => button.onclick = () => {
     if (locked()) return;
     const index = Number(button.dataset.index), item = cart[index];
@@ -162,7 +162,7 @@ function renderCart() {
     if (locked()) return;
     const [removed] = cart.splice(Number(button.dataset.remove), 1);
     renderCart();
-    feedback(`已移除 ${removed.dish}`);
+    feedback(`已移除 ${removed.dish} · Retiré : ${removed.fr || removed.dish}`);
   });
   holder.querySelectorAll('[data-edit]').forEach(button => button.onclick = () => {
     if (locked()) return;
@@ -330,7 +330,7 @@ document.querySelector('#menu-search').addEventListener('input', () => setCatego
 document.querySelector('#search-clear').onclick = () => {setCategory('全部', true); document.querySelector('#menu-search').focus()};
 document.querySelectorAll('.service-choice').forEach(button => button.onclick = () => {if (!locked()) {service = button.dataset.service; renderCart()}});
 document.querySelector('#clear-button').onclick = () => {
-  if (locked() || (cart.length && !confirm('清空当前购物车？'))) return;
+  if (locked() || (cart.length && !confirm('清空当前购物车？ / Vider le panier ?'))) return;
   cart = [];
   renderCart();
 };

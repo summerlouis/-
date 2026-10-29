@@ -151,7 +151,7 @@ function initPOSAdvanced(){
   cartBox.querySelectorAll('[data-remove]').forEach(button=>button.onclick=()=>{if(locked())return;cart.splice(Number(button.dataset.remove),1);render()});
   document.querySelector('#pos-total').textContent=money(totalFor(cart));
   payButton.disabled=submitting||(!cart.length&&!pending);
-  payButton.textContent=!cart.length&&!pending?'请先点击商品加入订单':pending?'重试确认上次订单（勿重复收款）':window.BaoRuntime?.mode==='mock'?'模拟付款并发送厨房':'已收款，保存订单并发送厨房';
+  payButton.textContent=!cart.length&&!pending?'请先添加商品 / Ajoutez un produit':pending?'重试确认上次订单 / Vérifier la commande précédente':window.BaoRuntime?.mode==='mock'?'模拟付款并发送厨房 / Simuler le paiement et envoyer en cuisine':'已收款，保存订单并发送厨房 / Enregistrer et envoyer en cuisine';
   window.BaoTable?.sync(document.querySelector('[data-pos-service].selected')?.dataset.posService||'堂食',pending);
   window.dispatchEvent(new Event('bao-pos-render'));
  }

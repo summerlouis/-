@@ -121,3 +121,6 @@ body[data-page="self"] .sync-tools button { border:0; background:transparent; co
 .product-info{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 10px 0;width:100%;box-sizing:border-box}.product-names{min-width:0;flex:1}.product-card .product-names strong,.product-card .product-names small{display:block;margin:0;white-space:normal;overflow-wrap:break-word}.product-card .product-names small{margin-top:4px}.product-card .product-info>b{flex-shrink:0;margin:0;font-size:22px;line-height:1.2;white-space:nowrap;font-weight:800}@media(max-width:410px){.product-info{gap:6px;padding:9px 8px 0}.product-card .product-info>b{font-size:20px}}
 
 .product-grid{grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr))}
+
+/* Equal bilingual name sizing and softer, rounder price numerals. */
+.product-card .product-names strong,.product-card .product-names small{font-size:17px;font-weight:700;line-height:1.4;color:var(--ink,#092a5b)}.product-card .product-names small{margin-top:3px}.product-card .product-info>b{font-family:ui-rounded,"Arial Rounded MT Bold","Trebuchet MS",system-ui,sans-serif;font-size:26px;font-weight:700;line-height:1.3;letter-spacing:.015em;font-variant-numeric:lining-nums}.product-info{gap:12px;padding-top:12px;padding-bottom:3px}

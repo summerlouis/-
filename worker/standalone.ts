@@ -1,3 +1,4 @@
+import {auditView} from './audit-view';
 import {deviceValid,manageDevices,hashCode} from './devices';
 import * as orders from '../app/api/orders/route';
 import * as catalog from '../app/api/catalog/route';
@@ -31,6 +32,7 @@ export default {
       if (!previous || session !== previous) next.headers.set('Set-Cookie',await sessionCookie(session,request,env));
       return next;
     };
+    if(path==='/api/audit-view')return auditView(request,env,session);
     if(path==='/api/devices')return manageDevices(request,env,session);
     if (path === '/api/device-session') {
       if (request.method === 'DELETE') { if(session.deviceId)await env.DB!.prepare('UPDATE device_registry SET revoked=1 WHERE store=? AND id=?').bind(session.store,session.deviceId).run(); session = newSession('customer',env.STORE_ID); return secureResponse(json({ok:true})); }

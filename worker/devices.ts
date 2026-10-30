@@ -24,7 +24,15 @@ export async function manageDevices(request:Request,env:Cloudflare.Env,session:S
   return json({ok:true});
  }
  if(data.action==='rotate'&&['admin','cashier','kitchen'].includes(data.role)){
-  const code=crypto.randomUUID()+crypto.randomUUID();
+  const custom=data.code!==undefined;
+  if(custom&&(typeof data.code!=='string'||!/^\S{8,64}$/.test(data.code)))return json({error:'配对码须为8–64个非空白字符 / Code : 8 à 64 caractères sans espaces'},400);
+  const code=custom?data.code:crypto.randomUUID()+crypto.randomUUID();
+  const hash=await hashCode(code);
+  for(const [other,fallback] of [['admin',env.ADMIN_DEVICE_CODE],['cashier',env.CASHIER_DEVICE_CODE],['kitchen',env.KITCHEN_DEVICE_CODE]] as const){
+   if(other===data.role)continue;
+   const current=await env.DB!.prepare('SELECT hash FROM pairing_codes WHERE store=? AND role=?').bind(session.store,other).first<{hash:string}>();
+   if(hash===(current?.hash||(fallback?await hashCode(fallback):'')))return json({error:'不同权限请使用不同配对码 / Utilisez un code différent pour chaque rôle'},409);
+  }
   await env.DB!.prepare('INSERT INTO pairing_codes(store,role,hash,updated) VALUES(?,?,?,?) ON CONFLICT(store,role) DO UPDATE SET hash=excluded.hash,updated=excluded.updated').bind(session.store,data.role,await hashCode(code),Date.now()).run();
   return json({code});
  }

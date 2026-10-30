@@ -18,7 +18,7 @@
   const box=document.querySelector(page==='pos'?'#pos-cart':'.basket');box.id=box.id||'order-basket';
   if(page==='pos'){const link=document.createElement('a');link.className='sticky-cart-link';link.href='#'+box.id;link.textContent='查看购物车 / Panier';document.body.append(link)}
   const note=document.createElement('p');note.className='notice';box.before(note);
-  const pendingState=()=>{const pending=BaoOrders.pending(page);note.textContent=pending?(page==='self'?'刚才的订单尚待确认。请点击“核对上次订单”查看提交结果；核对前购物车会暂时锁定，请勿重复下单。':'上次订单提交结果尚待确认。请再次提交以核对同一订单，勿重复向顾客收款；核对前暂不能修改购物车。'):'';const selectors=page==='pos'?'.catalog,.code-entry,#pos-cart,.pos-service,.payment,#clear-pos':'.product-grid,#cart-items,.service,#clear-button';document.querySelectorAll(selectors).forEach(el=>el.inert=Boolean(pending))};
+  const pendingState=()=>{const pending=BaoOrders.pending(page);note.textContent=pending?(page==='self'?'刚才的订单尚待确认。请点击“核对上次订单”查看提交结果；核对前购物车会暂时锁定，请勿重复下单。':'Commande précédente à vérifier. Réessayez pour vérifier la même commande, sans facturer à nouveau. Le panier reste verrouillé. / 上次提交结果待确认，请重试核对同一订单，勿重复收款，购物车暂时锁定。'):'';const selectors=page==='pos'?'.catalog,.code-entry,#pos-cart,.pos-service,.payment,#clear-pos':'.product-grid,#cart-items,.service,#clear-button';document.querySelectorAll(selectors).forEach(el=>el.inert=Boolean(pending))};
   window.addEventListener('bao-submit-state',pendingState);pendingState();
  }
  if(!['admin','owner'].includes(page))return;

@@ -117,10 +117,10 @@ function initOwner(){const monthOrders=orders().filter(order=>order.month===mont
 
 function showPOSReceipt(order){return new Promise(resolve=>{
  const dialog=document.createElement('dialog');dialog.className='cleanup-dialog pos-receipt';dialog.setAttribute('aria-labelledby','pos-receipt-title');
- dialog.innerHTML='<form method="dialog"><button class="cleanup-close" aria-label="关闭 · Fermer">×</button><p class="cleanup-eyebrow">下单成功 · Commande envoyée</p><h2 id="pos-receipt-title">订单已发送至厨房</h2><div class="receipt-pickup"><span>取餐号 · N° de retrait</span><strong></strong></div><p class="receipt-service"></p><div class="receipt-items"></div><div class="receipt-total"><span>订单金额 · Total</span><strong></strong></div><p class="receipt-note">模拟付款完成，不会扣款，不计入真实营业收入。<br>Paiement simulé, aucun débit.</p><small class="receipt-id"></small><div class="cleanup-actions"><button class="button cleanup-submit" autofocus>完成 · Terminer</button></div></form>';
+ dialog.innerHTML='<form method="dialog"><button class="cleanup-close" aria-label="关闭 · Fermer">×</button><p class="cleanup-eyebrow">Commande envoyée · 下单成功</p><h2 id="pos-receipt-title">Envoyée en cuisine · 已发送厨房</h2><div class="receipt-pickup"><span>N° de retrait · 取餐号</span><strong></strong></div><p class="receipt-service"></p><div class="receipt-items"></div><div class="receipt-total"><span>Total · 订单金额</span><strong></strong></div><p class="receipt-note">模拟付款完成，不会扣款，不计入真实营业收入。<br>Paiement simulé, aucun débit.</p><small class="receipt-id"></small><div class="cleanup-actions"><button class="button cleanup-submit" autofocus>Terminer · 完成</button></div></form>';
  dialog.querySelector('.receipt-pickup strong').textContent=order.pickupNumber||'—';
- dialog.querySelector('.receipt-service').textContent=(order.service||'堂食')+(order.tableNumber?' · '+order.tableNumber+' 桌 / Table':'');
- for(const item of order.items||[]){const row=document.createElement('p');row.textContent=[item.dish,item.filling,item.style].filter(Boolean).join(' · ')+' × '+quantity(item);dialog.querySelector('.receipt-items').append(row)}
+ dialog.querySelector('.receipt-service').textContent=(order.service==='打包'?'À emporter / 打包':'Sur place / 堂食')+(order.tableNumber?' · Table '+order.tableNumber+' / 桌':'');
+ for(const item of order.items||[]){const row=document.createElement('p');row.textContent=[item.fr||item.dish,item.fillingFr||item.filling,item.styleFr||item.style].filter(Boolean).join(' · ')+' / '+[item.dish,item.filling,item.style].filter(Boolean).join(' · ')+' × '+quantity(item);dialog.querySelector('.receipt-items').append(row)}
  dialog.querySelector('.receipt-total strong').textContent=money(order.total);
  dialog.querySelector('.receipt-id').textContent=order.id;
  if(!order.isTest&&window.BaoRuntime?.mode!=='mock')dialog.querySelector('.receipt-note').textContent='订单已保存 · Commande enregistrée';
@@ -139,11 +139,11 @@ function initPOSAdvanced(){
   else if(!submitting)cart=BaoCatalog.reprice(cart);
   sessionStorage.setItem('baoPosCart',JSON.stringify(cart));
   const query=document.querySelector('.catalog-search')?.value.trim().toLowerCase()||'';
-  catalog.innerHTML=products().filter(item=>item.active||item.soldOut).map(item=>{const image=BaoCatalog.imageFor(item);return `<button class="product" ${item.soldOut?'disabled':''} data-code="${escape(item.code)}">${item.soldOut?'<span class="soldout-label">售罄</span>':''}${image?`<span class="pos-product-photo ${BaoCatalog.customImage(item)?'':'default-product-photo'}" data-category="${escape(item.category)}"><img src="${escape(image)}" alt="" loading="lazy"></span>`:''}<b>${escape(item.code)}</b><strong>${escape(item.dish)}</strong><small>${escape(item.fr)} · ${money(item.price)}${item.category==='饺子'?' / 9个 · 9 pièces':''}</small></button>`}).join('');
+  catalog.innerHTML=products().filter(item=>item.active||item.soldOut).map(item=>{const image=BaoCatalog.imageFor(item);return `<button class="product" ${item.soldOut?'disabled':''} data-code="${escape(item.code)}">${item.soldOut?'<span class="soldout-label">Épuisé · 售罄</span>':''}${image?`<span class="pos-product-photo ${BaoCatalog.customImage(item)?'':'default-product-photo'}" data-category="${escape(item.category)}"><img src="${escape(image)}" alt="" loading="lazy"></span>`:''}<b>${escape(item.code)}</b><strong>${escape(item.fr||item.dish)}</strong><small>${escape(item.dish)} · ${money(item.price)}${item.category==='饺子'?' / 9个 · 9 pièces':''}</small></button>`}).join('');
   catalog.querySelectorAll('img').forEach(image=>image.onerror=()=>{image.parentElement.hidden=true});
   catalog.querySelectorAll('button').forEach(button=>{button.onclick=()=>begin(button.dataset.code);button.hidden=!button.textContent.toLowerCase().includes(query)});
-  document.querySelector('#cart-count').textContent=`${cart.reduce((sum,item)=>sum+quantity(item),0)} 件`;
-  cartBox.innerHTML=cart.length?cart.map((item,index)=>`<div class="cart-row"><div class="pos-item-details"><b>${escape(item.code)}</b> ${escape(item.dish)}<small>${escape(item.fr)}${item.filling?` · ${escape(item.filling)} / ${escape(item.fillingFr)} · ${escape(item.style)} / ${escape(item.styleFr)}`:''}</small><div class="quantity-control"><button type="button" class="button" data-decrease="${index}" aria-label="减少 ${escape(item.dish)} 数量" ${quantity(item)<=1||locked()?'disabled':''}>−</button><strong aria-label="数量">${quantity(item)}</strong><button type="button" class="button" data-increase="${index}" aria-label="增加 ${escape(item.dish)} 数量" ${quantity(item)>=999||locked()?'disabled':''}>＋</button></div></div><div class="pos-item-actions"><strong>${money(Math.round(Number(item.price)*100)*quantity(item)/100)}</strong><button type="button" class="button" data-remove="${index}" aria-label="移除 ${escape(item.dish)} / Retirer ${escape(item.fr || item.dish)}" ${locked()?'disabled':''}>移除 · Retirer</button></div></div>`).join(''):'<p class="empty">请输入编码或点击商品。</p>';
+  document.querySelector('#cart-count').textContent=`${cart.reduce((sum,item)=>sum+quantity(item),0)} articles · 件`;
+  cartBox.innerHTML=cart.length?cart.map((item,index)=>`<div class="cart-row"><div class="pos-item-details"><b class="pos-cart-name">${escape(item.fr||item.dish)} × ${quantity(item)}</b>${item.filling?`<div class="pos-cart-options">${escape(item.fillingFr||item.filling)} · ${escape(item.styleFr||item.style)}</div>`:''}<small class="pos-cart-zh">${escape(item.code)} · ${escape(item.dish)}${item.filling?' · '+escape(item.filling)+' · '+escape(item.style):''}</small><div class="quantity-control"><button type="button" class="button" data-decrease="${index}" aria-label="减少 ${escape(item.dish)} 数量" ${quantity(item)<=1||locked()?'disabled':''}>−</button><strong aria-label="数量">${quantity(item)}</strong><button type="button" class="button" data-increase="${index}" aria-label="增加 ${escape(item.dish)} 数量" ${quantity(item)>=999||locked()?'disabled':''}>＋</button></div></div><div class="pos-item-actions"><strong>${money(Math.round(Number(item.price)*100)*quantity(item)/100)}</strong><button type="button" class="button" data-remove="${index}" aria-label="移除 ${escape(item.dish)} / Retirer ${escape(item.fr || item.dish)}" ${locked()?'disabled':''}>Retirer · 移除</button></div></div>`).join(''):'<p class="empty">Saisissez un code ou choisissez un produit. / 输入编码或点击商品。</p>';
   cartBox.querySelectorAll('[data-decrease],[data-increase]').forEach(button=>button.onclick=()=>{
    if(locked())return;const increasing='increase'in button.dataset,index=Number(increasing?button.dataset.increase:button.dataset.decrease),item=cart[index];
    if(item)item.qty=Math.max(1,Math.min(999,quantity(item)+(increasing?1:-1)));render();
@@ -151,16 +151,16 @@ function initPOSAdvanced(){
   cartBox.querySelectorAll('[data-remove]').forEach(button=>button.onclick=()=>{if(locked())return;cart.splice(Number(button.dataset.remove),1);render()});
   document.querySelector('#pos-total').textContent=money(totalFor(cart));
   payButton.disabled=submitting||(!cart.length&&!pending);
-  payButton.textContent=!cart.length&&!pending?'请先添加商品 / Ajoutez un produit':pending?'重试确认上次订单 / Vérifier la commande précédente':window.BaoRuntime?.mode==='mock'?'模拟付款并发送厨房 / Simuler le paiement et envoyer en cuisine':'已收款，保存订单并发送厨房 / Enregistrer et envoyer en cuisine';
+  payButton.textContent=!cart.length&&!pending?'Ajoutez un produit / 请先添加商品':pending?'Vérifier la commande précédente / 重试确认上次订单':window.BaoRuntime?.mode==='mock'?'Simuler le paiement et envoyer en cuisine / 模拟付款并发送厨房':'已收款，保存订单并发送厨房 / Enregistrer et envoyer en cuisine';
   window.BaoTable?.sync(document.querySelector('[data-pos-service].selected')?.dataset.posService||'堂食',pending);
   window.dispatchEvent(new Event('bao-pos-render'));
  }
  function addItem(){
   if(locked())return;
   selection.product=BaoCatalog.get(selection.product.code);
-  if(!selection.product?.active){dialog.close();alert('商品已下架');return}
+  if(!selection.product?.active){dialog.close();alert('Produit indisponible / 商品已下架');return}
   const item={...itemFromProduct(selection.product),filling:selection.filling||'',fillingFr:selection.fillingFr||'',style:selection.style||'',styleFr:selection.styleFr||''},same=cart.find(entry=>entry.code===item.code&&entry.filling===item.filling&&entry.style===item.style);
-  if(same&&quantity(same)>=999){alert('同一商品和做法最多添加 999 份');return}
+  if(same&&quantity(same)>=999){alert('Maximum 999 portions par variante / 同一商品和做法最多添加 999 份');return}
   if(same)same.qty=quantity(same)+1;else cart.push(item);
   dialog.close();input.value='';render();
  }
@@ -168,8 +168,8 @@ function initPOSAdvanced(){
  function chooseCooking(){step.textContent='步骤 2 / 2 · Choisir la cuisson';title.textContent=`${selection.product.code} · ${selection.product.dish}`;subtitle.textContent=`${selection.filling} · ${selection.fillingFr}`;choices(cookings[selection.product.category],(zh,fr)=>{selection.style=zh;selection.styleFr=fr;addItem()})}
  function begin(code){
   if(locked())return;
-  const product=productByCode(code);if(!product||!product.active){alert('未找到可售商品编码 / Code indisponible');return}
-  if(window.BaoVariantPicker?.open(product,items=>{if(locked())throw Error('订单正在提交，请稍后');for(const item of items){const same=cart.find(x=>x.code===item.code&&x.filling===item.filling&&x.style===item.style);if((same?quantity(same):0)+item.qty>999)throw Error('同一规格最多 999 份')}for(const item of items){const same=cart.find(x=>x.code===item.code&&x.filling===item.filling&&x.style===item.style);if(same)same.qty+=item.qty;else cart.push(item)}input.value='';render()}))return;
+  const product=productByCode(code);if(!product||!product.active){alert('Code indisponible / 未找到可售商品编码');return}
+  if(window.BaoVariantPicker?.open(product,items=>{if(locked())throw Error('Envoi en cours, patientez / 订单正在提交，请稍后');for(const item of items){const same=cart.find(x=>x.code===item.code&&x.filling===item.filling&&x.style===item.style);if((same?quantity(same):0)+item.qty>999)throw Error('Maximum 999 portions par variante / 同一规格最多 999 份')}for(const item of items){const same=cart.find(x=>x.code===item.code&&x.filling===item.filling&&x.style===item.style);if(same)same.qty+=item.qty;else cart.push(item)}input.value='';render()}))return;
   selection={product};if(!cookings[product.category]){addItem();return}
   step.textContent='步骤 1 / 2 · Choisir la garniture';title.textContent=`${product.code} · ${product.dish}`;subtitle.textContent=product.fr;
   choices(({A1:[['韭菜鸡蛋','Poireau et œuf']],A2:[['猪肉白菜','Porc et chou'],['鲜肉','Porc'],['韭菜猪肉','Porc et poireau']],A3:[['红油牛肉包','Bao au bœuf pimenté'],['牛肉鲜肉包','Bao au bœuf frais']]}[product.code]||fillings),(zh,fr)=>{selection.filling=zh;selection.fillingFr=fr;chooseCooking()});dialog.showModal();
@@ -177,7 +177,7 @@ function initPOSAdvanced(){
  document.querySelector('#add-code').onclick=()=>begin(input.value);
  input.addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();begin(input.value)}});
  document.querySelectorAll('.pay').forEach(button=>button.onclick=()=>{if(locked())return;payment=button.dataset.payment;document.querySelectorAll('.pay').forEach(item=>item.classList.toggle('selected',item===button))});
- document.querySelector('#clear-pos').onclick=()=>{if(locked())return;if(cart.length&&!confirm('清空当前购物车？ / Vider le panier ?'))return;cart=[];render()};
+ document.querySelector('#clear-pos').onclick=()=>{if(locked())return;if(cart.length&&!confirm('Vider le panier ? / 清空当前购物车？'))return;cart=[];render()};
  payButton.onclick=async()=>{
   if(payButton.disabled||submitting)return;
   if(!BaoOrders.pending('pos')&&!window.BaoTable?.validate(document.querySelector('[data-pos-service].selected')?.dataset.posService||'堂食'))return;
@@ -187,12 +187,12 @@ function initPOSAdvanced(){
    let order;
    if(pending)order=pending;
    else{
-    if(!await BaoCatalog.refresh()){alert('无法核对云端价格，请联网后重试');return}
+    if(!await BaoCatalog.refresh()){alert('Impossible de vérifier les prix. Vérifiez la connexion et réessayez. / 无法核对云端价格，请联网后重试');return}
     const updated=BaoCatalog.reprice(snapshot);cart=updated;
     if(cartSignature(snapshot)!==cartSignature(updated)){
-     render();alert('商品价格或可售状态已变化，购物车已调整。请核对商品和应收金额后再次保存。本次未保存订单，请勿重复向顾客收款。');return;
+     render();alert('Prix ou disponibilité modifiés. Vérifiez le panier puis réessayez. Aucune commande enregistrée ; ne facturez pas deux fois. / 商品价格或可售状态已变化，请核对购物车后重试。本次未保存，请勿重复收款。');return;
     }
-    if(!cart.length){alert('请先添加商品 / Ajoutez un produit');return}
+    if(!cart.length){alert('Ajoutez un produit / 请先添加商品');return}
     const now=new Date(),total=totalFor(cart);
     order={id:window.baoOrderId(),day:day(),month:month(),time:now.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}),items:cart.map(item=>({...item})),service:document.querySelector('[data-pos-service].selected')?.dataset.posService||'堂食',total,paidTotal:total,status:'paid',payment,source:'pos',kitchenStatus:'new',corrections:[]};
    }
@@ -200,8 +200,8 @@ function initPOSAdvanced(){
    if(!pending)order.tableNumber=window.BaoTable?.value(order.service)||'';
    const saved=await BaoOrders.submit(order);
    audit(['paid','done'].includes(saved.status)?'POS 收款':'核对旧订单',`${saved.id} · ${money(saved.paidTotal??saved.total)} · ${saved.payment}`);
-   cart=[];render();if(['voided','cancelled'].includes(saved.status))alert(`此订单已作废或登记退款，请核对记录，勿重复收款。\n${saved.id}`);else await showPOSReceipt(saved);
-  }catch(error){alert(error.message)}
+   cart=[];render();if(['voided','cancelled'].includes(saved.status))alert(`Commande annulée ou remboursée. Vérifiez les données ; ne facturez pas deux fois. / 此订单已作废或退款，请勿重复收款。\n${saved.id}`);else await showPOSReceipt(saved);
+  }catch(error){alert(window.BaoPosFrench?.error(error.message)||error.message)}
   finally{submitting=false;document.querySelector('main').inert=false;render();window.dispatchEvent(new Event('bao-submit-state'))}
  };
  window.addEventListener('bao-catalog-change',render);render();input.focus();

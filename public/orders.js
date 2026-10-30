@@ -10,10 +10,10 @@
   let res;try{res=await fetch('/api/orders',{method,cache:'no-store',headers:body?{'Content-Type':'application/json'}:etag?{'If-None-Match':etag}:undefined,body:body?JSON.stringify(body):undefined,signal:AbortSignal.timeout(12000)})}catch{throw Error((document.body.dataset.page||'self')==='self'?'连接中断，请恢复网络后重试。未确认的订单和购物车会保留，请勿重复下单。':'连接中断，购物车已保留。请恢复网络后重试，不要重复收款。')}
   if(res.status===304)return state;
   if(method==='GET'&&res.ok)etag=res.headers.get('etag')||'';
-  const data=await res.json();if(!res.ok){const error=Error(data.error||'保存失败，请重试');error.status=res.status;throw error}return data;
+  const data=await res.json();if(!res.ok){const error=Error(window.BaoPosFrench?.error(data.error||'保存失败，请重试')||data.error||'保存失败，请重试');error.status=res.status;throw error}return data;
  }
  async function refresh(){if(!cloud){state={orders:read(legacyKey,[]),closures:[]};ready=true;return true}if(inflight)return inflight;
-  inflight=(async()=>{try{apply(await request('GET'));status('订单与厨房已同步 · '+new Date().toLocaleTimeString());return true}catch(error){status(error.message,true);return false}finally{inflight=null}})();return inflight;
+  inflight=(async()=>{try{apply(await request('GET'));status('订单与厨房已同步 · '+new Date().toLocaleTimeString());return true}catch(error){status(window.BaoPosFrench?.error(error.message)||error.message,true);return false}finally{inflight=null}})();return inflight;
  }
  async function submit(order){
   if(!cloud){const all=read(legacyKey,[]);all.push(order);localStorage.setItem(legacyKey,JSON.stringify(all));state.orders=all;announce();return order}

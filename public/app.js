@@ -191,12 +191,12 @@ function setCategory(category, clearSearch = false) {
   const query = search.value.trim();
   const words = normalise(query).split(/\s+/).filter(Boolean);
   const meta = {
-    全部: ['À LA CARTE','全部商品','先选商品，再选择口味和数量'],
+    全部: ['À LA CARTE','Notre carte · 全部商品','Choisissez un produit, puis sa garniture et sa cuisson. / 先选商品，再选馅料和做法'],
     包子: ['A · BAO','包子','可选馅料和做法，确认后加入购物车'],
     饺子: ['B · DUMPLINGS','饺子','B1–B4 每份 9 个，可选馅料和做法'],
     粥品: ['C · CONGEE','粥品','选择商品后，可调整购买数量'],
     其他: ['D · AUTRES','其他','选择商品后，可调整购买数量']
-  }[category] || ['À LA CARTE','全部商品','先选商品，再选择口味和数量'];
+  }[category] || ['À LA CARTE','Notre carte · 全部商品','Choisissez un produit, puis sa garniture et sa cuisson. / 先选商品，再选馅料和做法'];
   document.querySelector('#category-code').textContent = query ? 'RECHERCHE' : meta[0];
   document.querySelector('#category-title').textContent = query ? '搜索结果' : meta[1];
   document.querySelector('#menu-hint').textContent = query ? `正在全部商品中查找“${query}”` : meta[2];
@@ -207,6 +207,7 @@ function setCategory(category, clearSearch = false) {
     card.hidden = !matches;
     if (matches) visible++;
   });
+  document.querySelectorAll('.menu-group-title').forEach(heading=>{heading.hidden=category!=='全部'||Boolean(query)||!Array.from(document.querySelectorAll('.product-card')).some(card=>!card.hidden&&card.dataset.category===heading.dataset.category)});
   document.querySelectorAll('.category').forEach(button => {
     const active = button.dataset.category === (query ? '全部' : category);
     button.classList.toggle('active', active);
@@ -372,7 +373,12 @@ function syncMenu() {
   if (signature !== menuSignature) {
     const grid = document.querySelector('#product-grid');
     grid.replaceChildren();
-    for (const product of products) {
+    const categoryNames={'包子':'包子 · Bao','饺子':'饺子 · Raviolis','粥品':'粥品 · Congee','其他':'其他 · Autres'};
+    const categories=[...new Set(products.map(p=>p.category))];
+    const grouped=categories.flatMap(category=>products.filter(p=>p.category===category));
+    let lastCategory=null;
+    for (const product of grouped) {
+      if(product.category!==lastCategory){const heading=document.createElement('h3');heading.className='menu-group-title';heading.dataset.category=product.category;heading.textContent=categoryNames[product.category]||product.category;grid.append(heading);lastCategory=product.category;}
       const card = document.createElement('button');
       card.type = 'button';
       card.className = 'product-card';
@@ -402,7 +408,7 @@ function syncMenu() {
       }
       const label = document.createElement('i'); label.textContent = product.code;
       const name = document.createElement('strong'); name.textContent = product.dish + (portion(product) ? ' · 9个' : '');
-      const fr = document.createElement('small'); fr.textContent = product.fr + (portion(product) ? ' · 9 pièces' : '');
+      const fr = document.createElement('small'); fr.textContent = product.fr + (portion(product) ? ' · 9\u00a0pièces' : '');
       const price = document.createElement('b'); price.textContent = euro(product.price);
       const info = document.createElement('div'); info.className = 'product-info';
       const names = document.createElement('div'); names.className = 'product-names'; names.append(name, fr);

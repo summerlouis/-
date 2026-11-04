@@ -102,5 +102,45 @@
     "fr": "Congee au porc et œuf de cent ans",
     "price": 3.8,
     "active": true
+  },
+  {
+    "code": "D1",
+    "category": "饮品",
+    "dish": "绿豆汤 · 350毫升",
+    "fr": "Soupe sucrée de haricots mungo · 350 ml",
+    "price": 1,
+    "active": true
+  },
+  {
+    "code": "D2",
+    "category": "饮品",
+    "dish": "豆浆 · 350毫升",
+    "fr": "Lait de soja · 350 ml",
+    "price": 1,
+    "active": true
+  },
+  {
+    "code": "D3",
+    "category": "饮品",
+    "dish": "酸梅汤 · 350毫升",
+    "fr": "Boisson à la prune acidulée · 350 ml",
+    "price": 1,
+    "active": true
+  },
+  {
+    "code": "D4",
+    "category": "饮品",
+    "dish": "银耳羹 · 350毫升",
+    "fr": "Dessert au trémelle · 350 ml",
+    "price": 1,
+    "active": true
+  },
+  {
+    "code": "D5",
+    "category": "饮品",
+    "dish": "红枣枸杞 · 350毫升",
+    "fr": "Infusion de jujube et goji · 350 ml",
+    "price": 1,
+    "active": true
   }
 ]

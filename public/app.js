@@ -195,7 +195,8 @@ function setCategory(category, clearSearch = false) {
     包子: ['A · BAO','包子','可选馅料和做法，确认后加入购物车'],
     饺子: ['B · DUMPLINGS','饺子','B1–B4 每份 9 个，可选馅料和做法'],
     粥品: ['C · CONGEE','粥品','选择商品后，可调整购买数量'],
-    其他: ['D · AUTRES','其他','选择商品后，可调整购买数量']
+    饮品: ['D · BOISSONS','Boissons · 饮品','Choisissez votre boisson et la quantité. / 选择饮品和数量'],
+    其他: ['E · AUTRES','其他','选择商品后，可调整购买数量']
   }[category] || ['À LA CARTE','Notre carte · 全部商品','Choisissez un produit, puis sa garniture et sa cuisson. / 先选商品，再选馅料和做法'];
   document.querySelector('#category-code').textContent = query ? 'RECHERCHE' : meta[0];
   document.querySelector('#category-title').textContent = query ? '搜索结果' : meta[1];
@@ -373,7 +374,7 @@ function syncMenu() {
   if (signature !== menuSignature) {
     const grid = document.querySelector('#product-grid');
     grid.replaceChildren();
-    const categoryNames={'包子':'包子 · Bao','饺子':'饺子 · Raviolis','粥品':'粥品 · Congee','其他':'其他 · Autres'};
+    const categoryNames={'包子':'包子 · Bao','饺子':'饺子 · Raviolis','粥品':'粥品 · Congee','饮品':'饮品 · Boissons','其他':'其他 · Autres'};
     const categories=[...new Set(products.map(p=>p.category))];
     const grouped=categories.flatMap(category=>products.filter(p=>p.category===category));
     let lastCategory=null;
@@ -388,7 +389,7 @@ function syncMenu() {
       card.disabled = !product.active;
       if(product.soldOut){const badge=document.createElement('span');badge.className='soldout-label';badge.textContent='售罄 · Épuisé';card.append(badge)}
       const customSource = BaoCatalog.customImage(product);
-      const source = customSource || productImages.get(product.code);
+      const source = customSource || BaoCatalog.imageFor(product) || productImages.get(product.code);
       if (source) {
         const img = document.createElement('img');
         img.src = source;

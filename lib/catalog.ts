@@ -1,7 +1,7 @@
 import { env } from 'cloudflare:workers';
 import defaults from '../catalog-defaults.json';
 
-export const categories = ['包子', '饺子', '粥品', '其他'];
+export const categories = ['包子', '饺子', '粥品', '饮品', '其他'];
 export function validPrice(price:unknown):price is number {
   return typeof price === 'number' && Number.isFinite(price) && price >= 0 && price <= 99999.99 && Math.abs(price * 100 - Math.round(price * 100)) < 0.000001;
 }

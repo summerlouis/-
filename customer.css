@@ -144,3 +144,5 @@ body[data-page="self"] .sync-tools button { border:0; background:transparent; co
 
 /* Stable menu information alignment and full-width category headings. */
 .product-card .product-info{min-height:108px;align-items:flex-start;padding:12px 10px 8px;gap:8px}.product-card .product-info>b{font-size:24px;align-self:flex-start;margin-top:8px}.product-card .product-names small{overflow-wrap:normal;word-break:normal}.menu-group-title{grid-column:1 / -1;margin:8px 0 0;padding:10px 0;border-bottom:1px solid #d8e6f5;font-size:19px;color:#123f72}.menu-head span{max-width:330px;font-size:12px;line-height:1.5}
+
+.product-card[data-category="饮品"] .product-photo img{position:static;width:100%;height:100%;object-fit:contain;transform:none;background:#f7f0e7}.categories .category{flex-shrink:0}@media(max-width:600px){.categories .category{flex:0 0 auto;min-width:86px}}

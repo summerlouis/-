@@ -449,3 +449,5 @@ window.addEventListener('bao-catalog-change', syncMenu);
 syncMenu();
 renderReceipt();
 if (lastOrder) refreshReceipt();
+// Recompute a shared text area after catalog/filter changes and responsive resizing.
+(()=>{const grid=document.querySelector('.product-grid');if(!grid)return;let frame=0,lastWidth=0;const schedule=()=>{cancelAnimationFrame(frame);frame=requestAnimationFrame(()=>{let height=0;grid.querySelectorAll('.product-card').forEach(card=>{if(!card.getClientRects().length)return;const names=card.querySelector('.product-names'),price=card.querySelector('.product-info>b');if(names)height=Math.max(height,names.getBoundingClientRect().height,price?.getBoundingClientRect().height||0)});if(height)grid.style.setProperty('--menu-info-height',Math.ceil(height+16)+'px')})};new MutationObserver(schedule).observe(grid,{childList:true,subtree:true,attributes:true,attributeFilter:['hidden','class']});new ResizeObserver(entries=>{const width=entries[0].contentRect.width;if(width!==lastWidth){lastWidth=width;schedule()}}).observe(grid);document.fonts?.ready.then(schedule);window.addEventListener('bao-catalog-change',schedule);schedule()})();

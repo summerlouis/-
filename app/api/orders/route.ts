@@ -1,3 +1,4 @@
+import {bundleComponents} from '../../../lib/bundles';
 import { env } from 'cloudflare:workers';
 import { catalog } from '../../../lib/catalog';
 import { orderAccess, notifyOrders } from '../../../lib/order-access';
@@ -71,7 +72,8 @@ export async function POST(req:Request){
   const incoming=Number(item.price);
   if(!Number.isFinite(incoming)||incoming<0||incoming>99999.99)return json({error:'商品价格无效'},400);
   if(!importing&&Math.round(incoming*100)!==Math.round(price*100))return json({error:'价格已更新，请核对新金额后再次确认'},409);
-  items.push({...product,price:importing?Math.round(incoming*100)/100:price,qty:Number(item.qty??1),filling:text(item.filling),fillingFr:text(item.fillingFr),style:text(item.style),styleFr:text(item.styleFr)});
+  let components;try{components=bundleComponents(product,item.components,available)}catch(e){return json({error:(e as Error).message},409)}
+  items.push({...product,...(components?{components}:{}),price:importing?Math.round(incoming*100)/100:price,qty:Number(item.qty??1),filling:text(item.filling),fillingFr:text(item.fillingFr),style:text(item.style),styleFr:text(item.styleFr)});
  }
  const now=new Date();let zone=text(data.timeZone)||'UTC';try{new Intl.DateTimeFormat('en-CA',{timeZone:zone}).format(now)}catch{zone='UTC'}
  const dateKey=new Intl.DateTimeFormat('en-CA',{timeZone:zone,year:'numeric',month:'2-digit',day:'2-digit'}).format(now);
@@ -109,14 +111,14 @@ export async function PATCH(req:Request){
   if(!access.mock||order.paymentMode!=='mock')return json({error:'此环境未启用模拟付款'},403);
   if(order.status!=='pending')return json({error:'订单已作废或已处理'},409);
   const available=await catalog(user);
-  if(order.items.some((item:{code:string})=>!available.find(p=>p.code===item.code)?.active))return json({error:'订单中有已下架商品，请联系店员作废后重新点单'},409);
+  if(order.items.some((item:{code:string})=>(!available.find(p=>p.code===item.code)?.active||(item as any).components?.some((c:any)=>!available.find(p=>p.code===c.code)?.active))))return json({error:'订单中有已下架商品，请联系店员作废后重新点单'},409);
   order.status='paid';order.paidTotal=0;order.simulatedTotal=order.total;order.payment='模拟付款';order.kitchenStatus='new';order.paidAt=now;action='模拟付款成功，不扣款、不计入营业收入';
  }else if(data.action==='pay'){
   if(access.mock||order.isTest)return json({error:'测试订单只能使用模拟付款'},403);
   if(order.status!=='pending')return json({error:'该订单已处理，请核对收款记录，不要重复收款'},409);
   if(!['现金','银行卡','二维码'].includes(data.payment))return json({error:'请选择实际收款方式'},400);
   const available=await catalog(user);
-  if(order.items.some((item:{code:string})=>!available.find(p=>p.code===item.code)?.active))return json({error:'订单中有已下架或删除的商品，请先作废并重新点单'},409);
+  if(order.items.some((item:{code:string})=>(!available.find(p=>p.code===item.code)?.active||(item as any).components?.some((c:any)=>!available.find(p=>p.code===c.code)?.active))))return json({error:'订单中有已下架或删除的商品，请先作废并重新点单'},409);
   const received=localTime(data.timeZone);
   order.orderedDateKey=order.dateKey;order.orderedTime=order.time;order.dateKey=received.dateKey;order.time=received.time;order.month=received.dateKey.slice(0,7);
   order.status='paid';order.paidTotal=order.total;order.payment=data.payment;order.kitchenStatus='new';order.paidAt=now;action='柜台确认收款 · '+data.payment;

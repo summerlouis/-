@@ -13,7 +13,7 @@ const saveSession = (key, value) => {try {sessionStorage.setItem(sessionKey(key)
 const pendingSelf = () => BaoOrders.pending('self');
 const euro = value => `${Number(value).toFixed(2).replace('.',',')} €`;
 const sumItems = items => items.reduce((sum, item) => sum + Math.round(Number(item.price) * 100) * Number(item.qty), 0) / 100;
-const itemKey = item => JSON.stringify([item.code, item.filling || '', item.style || '']);
+const itemKey = item => JSON.stringify([item.code, item.filling || '', item.style || '',window.BaoBundles?.key(item)||'']);
 const normalise = value => String(value || '').toLocaleLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/œ/g, 'oe').replace(/æ/g, 'ae');
 const portion = product => /^B[1-4]$/.test(product.code) ? '9 个 / 9 pièces' : '';
 const choice = document.querySelector('#choice-dialog');
@@ -88,6 +88,7 @@ function updateChoice(message = choiceNotice) {
 
 function openChoice(product, item = null) {
   if (locked() || !product?.active) return;
+  if(product.bundle){const oldKey=item?itemKey(item):null;BaoBundles.open(product,value=>{if(locked())throw Error('Commande en cours / 订单处理中');const index=oldKey?cart.findIndex(x=>itemKey(x)===oldKey):-1;if(oldKey&&index<0)throw Error('Panier modifié / 购物车已变动');if(index>=0)cart[index]=value;else cart.push(value);renderCart()},item);return}
   if(!item&&window.BaoVariantPicker?.open(product,items=>{if(locked())throw Error('订单正在提交，请稍后');for(const value of items){const same=cart.find(x=>itemKey(x)===itemKey(value));if((same?.qty||0)+value.qty>999)throw Error('同一规格最多 999 份')}for(const value of items){const same=cart.find(x=>itemKey(x)===itemKey(value));if(same)same.qty+=value.qty;else cart.push(value)}renderCart();feedback('已按馅料和做法分别加入购物车')}))return;
   selection = {...product};
   choiceNotice = '';
@@ -149,7 +150,7 @@ function renderCart() {
   const count = cart.reduce((sum, item) => sum + item.qty, 0);
   const holder = document.querySelector('#cart-items');
   document.querySelector('#cart-count').textContent = `${count} 件`;
-  holder.innerHTML = cart.length ? cart.map((item, index) => `<div class="cart-row"><div><strong><b>${escape(item.code)}</b> · ${escape(item.dish)}</strong><small>${escape(item.fr)}${item.filling ? ` · ${escape(item.filling)} / ${escape(item.fillingFr)} · ${escape(item.style)} / ${escape(item.styleFr)}` : ''}</small><small>${portion(item)}${portion(item) ? ' · ' : ''}${euro(item.price)} × ${item.qty}</small><button type="button" class="cart-edit" data-edit="${index}" ${locked() ? 'disabled' : ''}>修改选择 / Modifier</button></div><div><strong>${euro(item.price * item.qty)}</strong><div class="quantity"><button type="button" data-change="-1" data-index="${index}" aria-label="减少 ${escape(item.dish)} 数量" ${locked() ? 'disabled' : ''}>−</button><b>${item.qty}</b><button type="button" data-change="1" data-index="${index}" aria-label="增加 ${escape(item.dish)} 数量" ${locked() || item.qty >= 999 ? 'disabled' : ''}>＋</button><button type="button" class="remove" data-remove="${index}" aria-label="移除 ${escape(item.dish)} / Retirer ${escape(item.fr || item.dish)}" ${locked() ? 'disabled' : ''}>移除 · Retirer</button></div></div></div>`).join('') : '<p class="empty">还没有选好？先看看菜单吧<br><small>Choisissez vos produits dans le menu</small></p>';
+  holder.innerHTML = cart.length ? cart.map((item, index) => `<div class="cart-row"><div><strong><b>${escape(item.code)}</b> · ${escape(item.dish)}</strong><small>${escape(item.fr)}${item.filling ? ` · ${escape(item.filling)} / ${escape(item.fillingFr)} · ${escape(item.style)} / ${escape(item.styleFr)}` : ''}</small>${window.BaoBundles?.html(item)||''}<small>${portion(item)}${portion(item) ? ' · ' : ''}${euro(item.price)} × ${item.qty}</small><button type="button" class="cart-edit" data-edit="${index}" ${locked() ? 'disabled' : ''}>修改选择 / Modifier</button></div><div><strong>${euro(item.price * item.qty)}</strong><div class="quantity"><button type="button" data-change="-1" data-index="${index}" aria-label="减少 ${escape(item.dish)} 数量" ${locked() ? 'disabled' : ''}>−</button><b>${item.qty}</b><button type="button" data-change="1" data-index="${index}" aria-label="增加 ${escape(item.dish)} 数量" ${locked() || item.qty >= 999 ? 'disabled' : ''}>＋</button><button type="button" class="remove" data-remove="${index}" aria-label="移除 ${escape(item.dish)} / Retirer ${escape(item.fr || item.dish)}" ${locked() ? 'disabled' : ''}>移除 · Retirer</button></div></div></div>`).join('') : '<p class="empty">还没有选好？先看看菜单吧<br><small>Choisissez vos produits dans le menu</small></p>';
   holder.querySelectorAll('[data-change]').forEach(button => button.onclick = () => {
     if (locked()) return;
     const index = Number(button.dataset.index), item = cart[index];
@@ -195,6 +196,7 @@ function setCategory(category, clearSearch = false) {
     包子: ['A · BAO','包子','可选馅料和做法，确认后加入购物车'],
     饺子: ['B · DUMPLINGS','饺子','B1–B4 每份 9 个，可选馅料和做法'],
     粥品: ['C · CONGEE','粥品','选择商品后，可调整购买数量'],
+    套餐: ['M · MENUS','Menus · 套餐','Composez votre menu à prix fixe. / 选择搭配，按套餐价收款'],
     饮品: ['D · BOISSONS','Boissons · 饮品','Choisissez votre boisson et la quantité. / 选择饮品和数量'],
     其他: ['E · AUTRES','其他','选择商品后，可调整购买数量']
   }[category] || ['À LA CARTE','Notre carte · 全部商品','Choisissez un produit, puis sa garniture et sa cuisson. / 先选商品，再选馅料和做法'];
@@ -227,7 +229,7 @@ function showOrderSummary(message = '') {
   const pending = pendingSelf();
   confirmedQuote = {items: copyItems(pending?.items || cart), service: pending?.service || service, tableNumber:pending?.tableNumber??window.BaoTable?.value(service)??''};
   document.querySelector('#confirm-service').textContent = confirmedQuote.service+(confirmedQuote.tableNumber?' · '+confirmedQuote.tableNumber+' 桌':'');
-  document.querySelector('#confirm-items').innerHTML = confirmedQuote.items.map(item => `<li><span>${escape(item.dish)}${item.filling ? ' · ' + escape(item.filling) : ''}${item.style ? ' · ' + escape(item.style) : ''} × ${item.qty}</span><strong>${euro(item.price * item.qty)}</strong></li>`).join('');
+  document.querySelector('#confirm-items').innerHTML = confirmedQuote.items.map(item => `<li><span>${escape(item.dish)}${item.filling ? ' · ' + escape(item.filling) : ''}${item.style ? ' · ' + escape(item.style) : ''} × ${item.qty}${window.BaoBundles?.html(item)||''}</span><strong>${euro(item.price * item.qty)}</strong></li>`).join('');
   document.querySelector('#confirm-total').textContent = euro(sumItems(confirmedQuote.items));
   document.querySelector('#confirm-message').textContent = message;
   document.querySelector('[data-method]').textContent = pending ? '核对上次订单' : (window.BaoRuntime?.mode==='mock'?'确认提交，进入模拟付款':'确认提交，到柜台付款');
@@ -255,7 +257,7 @@ function renderReceipt() {
   document.querySelector('#pickup-number').textContent = order.pickupNumber || order.id;
   document.querySelector('#receipt-total').textContent = order.service + (order.tableNumber?' · '+order.tableNumber+' 桌':'') + ' · ' + (closed ? '此订单无需再次付款' : paid ? (order.isTest?'模拟金额 ':'已付 ') + euro(order.isTest?order.total:order.paidTotal) : '待付 ' + euro(order.total));
   document.querySelector('#mock-pay-receipt').hidden=!(order.isTest&&order.status==='pending');
-  document.querySelector('#receipt-items').innerHTML = order.items.map(item => `<li><span>${escape(item.dish)}${item.filling ? ' · ' + escape(item.filling) : ''}${item.style ? ' · ' + escape(item.style) : ''} × ${item.qty}</span><strong>${euro(item.price * item.qty)}</strong></li>`).join('');
+  document.querySelector('#receipt-items').innerHTML = order.items.map(item => `<li><span>${escape(item.dish)}${item.filling ? ' · ' + escape(item.filling) : ''}${item.style ? ' · ' + escape(item.style) : ''} × ${item.qty}${window.BaoBundles?.html(item)||''}</span><strong>${euro(item.price * item.qty)}</strong></li>`).join('');
   document.querySelector('#receipt-updated').textContent = !navigator.onLine ? '当前离线，显示此设备保存的订单；联网后会再次核对。' : receiptCheckedAt ? `最近核对 ${receiptCheckedAt.toLocaleTimeString()} · 状态变化会自动更新` : '显示此设备保存的订单，正在核对最新状态…';
   if (navigator.onLine && document.querySelector('[data-orders-status].sync-error')) document.querySelector('#receipt-updated').textContent = '暂时无法核对最新状态，以下为本机保存记录，请联网后重试。';
 }
@@ -374,7 +376,7 @@ function syncMenu() {
   if (signature !== menuSignature) {
     const grid = document.querySelector('#product-grid');
     grid.replaceChildren();
-    const categoryNames={'包子':'包子 · Bao','饺子':'饺子 · Raviolis','粥品':'粥品 · Congee','饮品':'饮品 · Boissons','其他':'其他 · Autres'};
+    const categoryNames={'包子':'包子 · Bao','饺子':'饺子 · Raviolis','粥品':'粥品 · Congee','饮品':'饮品 · Boissons','套餐':'套餐 · Menus','其他':'其他 · Autres'};
     const categories=[...new Set(products.map(p=>p.category))];
     const grouped=categories.flatMap(category=>products.filter(p=>p.category===category));
     let lastCategory=null;
@@ -390,7 +392,7 @@ function syncMenu() {
       if(product.soldOut){const badge=document.createElement('span');badge.className='soldout-label';badge.textContent='售罄 · Épuisé';card.append(badge)}
       const customSource = BaoCatalog.customImage(product);
       const source = customSource || BaoCatalog.imageFor(product) || productImages.get(product.code);
-      if (source) {
+      if (product.bundle && !customSource) {const photo=document.createElement('div');photo.className='product-photo';photo.innerHTML=BaoBundles.photo(product);card.append(photo)} else if (source) {
         const img = document.createElement('img');
         img.src = source;
         img.alt = '';

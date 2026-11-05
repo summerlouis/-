@@ -142,5 +142,57 @@
     "fr": "Infusion de jujube et goji · 350 ml",
     "price": 1,
     "active": true
+  },
+  {
+    "code": "M1",
+    "dish": "包子套餐",
+    "fr": "Menu Bao",
+    "price": 3.5,
+    "bundle": {
+      "mainCategory": "包子",
+      "mainCount": 2,
+      "drinkCount": 1,
+      "mains": [
+        "A1",
+        "A2",
+        "A3",
+        "A4"
+      ],
+      "drinks": [
+        "D1",
+        "D2",
+        "D3",
+        "D4",
+        "D5"
+      ]
+    },
+    "category": "套餐",
+    "active": true
+  },
+  {
+    "code": "M2",
+    "dish": "饺子套餐",
+    "fr": "Menu Raviolis",
+    "price": 5.5,
+    "bundle": {
+      "mainCategory": "饺子",
+      "mainCount": 1,
+      "drinkCount": 1,
+      "mains": [
+        "B1",
+        "B2",
+        "B3",
+        "B4"
+      ],
+      "drinks": [
+        "D1",
+        "D2",
+        "D3",
+        "D4",
+        "D5"
+      ]
+    },
+    "category": "套餐",
+    "active": true
   }
 ]

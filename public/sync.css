@@ -89,3 +89,8 @@ body[data-page="kitchen"] .ticket{padding:10px;margin-bottom:10px}
 body[data-page="kitchen"] .ticket h3{margin:0 0 5px;font-size:17px}
 body[data-page="kitchen"] .ticket>p{margin:6px 0}
 body[data-page="kitchen"] .ticket>.button{min-height:42px;padding:8px 10px}
+/* Larger, clearer portion controls for touch ordering. */
+.variant-counter button{min-width:100px;min-height:48px;padding:12px 24px;background:#e5f1ff;color:#123f72;border:1px solid #8db8e5;border-radius:10px;font-size:19px;font-weight:700;line-height:1.2;cursor:pointer}
+.variant-counter button:not(:disabled):hover{background:#d4e8ff;border-color:#377cbf}
+.variant-counter button:disabled{background:#edf3fa;color:#91a6bd;border-color:#d0deec;opacity:1;cursor:not-allowed}
+@media(max-width:420px){.variant-counter{gap:8px}.variant-counter button{min-width:82px;padding:12px 18px}.variant-counter strong{font-size:14px;min-width:100px}}

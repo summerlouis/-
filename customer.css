@@ -156,3 +156,6 @@ body[data-page="self"] .sync-tools button { border:0; background:transparent; co
 .product-card .product-names small{height:auto;min-height:0}
 .product-card .product-info>b{align-self:center;margin-top:0}
 .product-card .product-placeholder{aspect-ratio:1.45;height:auto;min-height:0}
+/* High-contrast price badges matching the menu's blue palette. */
+.product-card .product-info>b{background:#123f72;color:#fff;border-radius:9px;padding:6px 8px;font-size:22px;line-height:1.2;letter-spacing:0;box-shadow:0 2px 5px #123f7214}
+@media(max-width:410px){.product-card .product-info>b{font-size:20px;padding:6px}}

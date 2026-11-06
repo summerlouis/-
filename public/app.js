@@ -333,8 +333,8 @@ document.querySelectorAll('.category').forEach(button => button.onclick = () => 
 document.querySelector('#menu-search').addEventListener('input', () => setCategory(selectedCategory));
 document.querySelector('#search-clear').onclick = () => {setCategory('全部', true); document.querySelector('#menu-search').focus()};
 document.querySelectorAll('.service-choice').forEach(button => button.onclick = () => {if (!locked()) {service = button.dataset.service; renderCart()}});
-document.querySelector('#clear-button').onclick = () => {
-  if (locked() || (cart.length && !confirm('清空当前购物车？ / Vider le panier ?'))) return;
+document.querySelector('#clear-button').onclick = async () => {
+  if (locked() || (cart.length && !await BaoDialog.confirm('清空当前购物车？ / Vider le panier ?'))) return;
   cart = [];
   renderCart();
 };

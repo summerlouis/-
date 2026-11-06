@@ -33,7 +33,7 @@ function renderProductAdmin(){
    deleteButton.onclick=async()=>{
     const code=deleteButton.dataset.deleteProduct,current=BaoCatalog.get(code);
     if(!current){renderProductAdmin();return}
-    if(!confirm('确认删除 '+code+' · '+current.dish+'？\n删除后会从后台、POS、自助点餐及未付款购物车移除。历史订单和成交金额保留。\n若只是暂停售卖，请取消并选择“下架”。'))return;
+    if(!await BaoDialog.confirm('确认删除 '+code+' · '+current.dish+'？\n删除后会从后台、POS、自助点餐及未付款购物车移除。历史订单和成交金额保留。\n若只是暂停售卖，请取消并选择“下架”。'))return;
     deleteButton.disabled=true;
     try{await BaoCatalog.remove(code,Number(deleteButton.dataset.revision));audit('删除商品',code+' · '+current.dish);initAdminDelete();document.querySelector('#price-message').textContent=code+' · '+current.dish+' 已删除，历史订单保持不变。'}
     catch(error){document.querySelector('#price-message').textContent=error.name==='TimeoutError'||error instanceof TypeError?'网络异常，删除结果尚未确认，请刷新商品列表后核对。':error.message}
@@ -96,7 +96,7 @@ function activePaid(){return orders().filter(order=>!order.isTest&&paid(order)&&
 function netFor(filter){const sales=activePaid().filter(filter).reduce((sum,order)=>sum+financialTotal(order),0);const manual=adjustments().filter(item=>item.kind!=='correction'&&filter(item)).reduce((sum,item)=>sum+Number(item.amount||0),0);return sales+manual}
 function navRefresh(){window.addEventListener('storage',event=>{if(event.key===CATALOG_KEY||page==='pos')return;if(page==='admin')initAdminDelete();if(page==='owner')initOwner()});}
 function kitchenLabel(status){return status==='making'?'制作中':status==='ready'?'待取餐':status==='complete'?'已完成':'待制作'}
-async function refundOrder(id){const order=orders().find(o=>o.id===id);if(!order)return;const test=order.isTest||order.paymentMode==='mock';const reason=test?'模拟订单取消':prompt('Motif du remboursement / 退款原因（先通过原收款方式实际退款，再登记）');if(!reason?.trim())return;if(!confirm(test?'Annuler cette simulation ? Aucun remboursement réel. / 取消此模拟订单，不产生实际退款。':'Confirmez le remboursement déjà effectué : '+money(financialTotal(order))+' / 确认已通过原收款方式完成实际退款？系统不会自动退钱。'))return;try{await BaoOrders.change(id,'refund',undefined,{refundConfirmed:!test,reason:reason.trim()});initAdminDelete()}catch(error){alert(error.message)}}
+async function refundOrder(id){const order=orders().find(o=>o.id===id);if(!order)return;const test=order.isTest||order.paymentMode==='mock';const reason=test?'模拟订单取消':await BaoDialog.prompt('Motif du remboursement / 退款原因（先通过原收款方式实际退款，再登记）');if(!reason?.trim())return;if(!await BaoDialog.confirm(test?'Annuler cette simulation ? Aucun remboursement réel. / 取消此模拟订单，不产生实际退款。':'Confirmez le remboursement déjà effectué : '+money(financialTotal(order))+' / 确认已通过原收款方式完成实际退款？系统不会自动退钱。'))return;try{await BaoOrders.change(id,'refund',undefined,{refundConfirmed:!test,reason:reason.trim()});initAdminDelete()}catch(error){BaoDialog.alert(error.message)}}
 function correctOrder(id){openDeleteDialog(id)}
 function adminMetricValues(list,todayOrders,mock,net,refunds){
  const rows=todayOrders.filter(o=>mock?o.isTest:!o.isTest),settled=rows.filter(paid);
@@ -112,7 +112,7 @@ function renderAdminMetrics(list,todayOrders,net,refunds){
  let detail=document.querySelector('#admin-kitchen-detail');if(!detail){detail=document.createElement('small');detail.id='admin-kitchen-detail';document.querySelector('#admin-kitchen').after(detail)}detail.textContent='制作中 '+value.making+' · 待取餐 '+value.ready+' / En cours · Prêt';
 }
 function initAdmin(){const list=orders(),todayOrders=list.filter(order=>order.day===day()),net=netFor(order=>order.day===day()),refunds=todayOrders.filter(order=>order.status==='cancelled'&&order.refundAmount).reduce((sum,order)=>sum+Number(order.refundAmount),0);renderAdminMetrics(list,todayOrders,net,refunds);const holder=document.querySelector('#admin-orders');holder.innerHTML=todayOrders.length?[...todayOrders].reverse().map(order=>`<article class="order-row"><div class="order-top"><b>${escape(order.id)}${order.tableNumber?' · '+escape(order.tableNumber)+' 桌':''}${order.isTest?' · 模拟订单':''}</b><span class="status ${order.status}">${escape(BaoOrders.paymentLabel(order))}</span></div><p>${order.items.map(item=>`${escape(item.code||'')} · ${escape(item.dish)} × ${quantity(item)}${window.BaoBundles?.html(item)||''}`).join('<br>')}</p><footer><strong>${money(order.status==='pending'||order.isTest?order.total:financialTotal(order))}</strong>${!['cancelled','voided'].includes(order.status)?`<span><button class="button" data-correct="${order.id}">纠错</button>${paid(order)?`<button class="button danger" data-refund="${order.id}">退款取消</button>`:''}</span>`:''}</footer></article>`).join(''):'<p class="empty">今日暂无订单</p>';holder.querySelectorAll('[data-correct]').forEach(button=>button.onclick=()=>correctOrder(button.dataset.correct));holder.querySelectorAll('[data-refund]').forEach(button=>button.onclick=()=>refundOrder(button.dataset.refund));renderProductAdmin();if(!window.BaoAudit)document.querySelector('#admin-audit').innerHTML=read(AUDIT_KEY).slice(-12).reverse().map(entry=>`<div><b>${escape(entry.action)}</b> · ${escape(entry.details)}<br><small>${escape(entry.time)}</small></div>`).join('')||'<p class="empty">暂无操作记录</p>';document.querySelector('#admin-close-month').onclick=closeMonth}
-async function closeMonth(){const date=new Date();date.setMonth(date.getMonth()-1);const suggested=date.getFullYear()+'-'+String(date.getMonth()+1).padStart(2,'0');const key=prompt('输入要归档的已结束月份（YYYY-MM）',suggested);if(!key)return;if(!confirm('归档 '+key+' 后，该月订单不可再修改，是否继续？'))return;try{await BaoOrders.close(key);alert('月份已归档');initAdminDelete()}catch(error){alert(error.message)}}
+async function closeMonth(){const date=new Date();date.setMonth(date.getMonth()-1);const suggested=date.getFullYear()+'-'+String(date.getMonth()+1).padStart(2,'0');const key=await BaoDialog.prompt('输入要归档的已结束月份（YYYY-MM）',suggested);if(!key)return;if(!await BaoDialog.confirm('归档 '+key+' 后，该月订单不可再修改，是否继续？'))return;try{await BaoOrders.close(key);BaoDialog.alert('月份已归档');initAdminDelete()}catch(error){BaoDialog.alert(error.message)}}
 function initOwner(){const monthOrders=orders().filter(order=>order.month===month()),refunds=monthOrders.filter(order=>order.status==='cancelled'&&order.refundAmount).reduce((sum,order)=>sum+Number(order.refundAmount),0);document.querySelector('#owner-today').textContent=money(netFor(order=>order.day===day()));document.querySelector('#owner-month').textContent=money(netFor(order=>order.month===month()));document.querySelector('#owner-refunds').textContent=money(refunds);document.querySelector('#owner-orders').textContent=monthOrders.filter(o=>paid(o)&&!o.isTest).length;const totals=Object.create(null);monthOrders.filter(o=>paid(o)&&!o.isTest).forEach(order=>order.items.forEach(item=>{totals[item.dish]=(totals[item.dish]||0)+quantity(item)}));const ranked=Object.entries(totals).sort((a,b)=>b[1]-a[1]),max=ranked[0]?.[1]||1;document.querySelector('#owner-products').innerHTML=ranked.length?ranked.slice(0,6).map(([name,count])=>`<div class="bar-line"><span>${escape(name)}</span><i style="width:${Math.max(8,count/max*100)}%"></i><b>${count} 份</b></div>`).join(''):'<p class="empty">本月尚无销售</p>';document.querySelector('#owner-archives').innerHTML=BaoOrders.closures().map(c=>({month:c.month,closedAt:c.closed_at,orders:orders().filter(o=>o.month===c.month).length,net:netFor(o=>o.month===c.month)})).reverse().map(item=>`<div><b>${item.month}</b> · ${money(item.net)}<br><small>${item.orders} 单 · ${escape(item.closedAt)}</small></div>`).join('')||'<p class="empty">尚无归档月份</p>'}
 
 function showPOSReceipt(order){return new Promise(resolve=>{
@@ -162,9 +162,9 @@ function initPOSAdvanced(){
  function addItem(){
   if(locked())return;
   selection.product=BaoCatalog.get(selection.product.code);
-  if(!selection.product?.active){dialog.close();alert('Produit indisponible / 商品已下架');return}
+  if(!selection.product?.active){dialog.close();BaoDialog.alert('Produit indisponible / 商品已下架');return}
   const item={...itemFromProduct(selection.product),filling:selection.filling||'',fillingFr:selection.fillingFr||'',style:selection.style||'',styleFr:selection.styleFr||''},same=cart.find(entry=>entry.code===item.code&&entry.filling===item.filling&&entry.style===item.style);
-  if(same&&quantity(same)>=999){alert('Maximum 999 portions par variante / 同一商品和做法最多添加 999 份');return}
+  if(same&&quantity(same)>=999){BaoDialog.alert('Maximum 999 portions par variante / 同一商品和做法最多添加 999 份');return}
   if(same)same.qty=quantity(same)+1;else cart.push(item);
   dialog.close();input.value='';render();
  }
@@ -172,7 +172,7 @@ function initPOSAdvanced(){
  function chooseCooking(){step.textContent='步骤 2 / 2 · Choisir la cuisson';title.textContent=`${selection.product.code} · ${selection.product.dish}`;subtitle.textContent=`${selection.filling} · ${selection.fillingFr}`;choices(cookings[selection.product.category],(zh,fr)=>{selection.style=zh;selection.styleFr=fr;addItem()})}
  function begin(code){
   if(locked())return;
-  const product=productByCode(code);if(!product||!product.active){alert('Code indisponible / 未找到可售商品编码');return}
+  const product=productByCode(code);if(!product||!product.active){BaoDialog.alert('Code indisponible / 未找到可售商品编码');return}
   if(product.bundle){BaoBundles.open(product,value=>{if(locked())throw Error('Commande en cours / 订单处理中');cart.push(value);input.value='';render()});return}
   if(window.BaoVariantPicker?.open(product,items=>{if(locked())throw Error('Envoi en cours, patientez / 订单正在提交，请稍后');for(const item of items){const same=cart.find(x=>x.code===item.code&&x.filling===item.filling&&x.style===item.style);if((same?quantity(same):0)+item.qty>999)throw Error('Maximum 999 portions par variante / 同一规格最多 999 份')}for(const item of items){const same=cart.find(x=>x.code===item.code&&x.filling===item.filling&&x.style===item.style);if(same)same.qty+=item.qty;else cart.push(item)}input.value='';render()}))return;
   selection={product};if(!cookings[product.category]){addItem();return}
@@ -182,7 +182,7 @@ function initPOSAdvanced(){
  document.querySelector('#add-code').onclick=()=>begin(input.value);
  input.addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();begin(input.value)}});
  document.querySelectorAll('.pay').forEach(button=>button.onclick=()=>{if(locked())return;payment=button.dataset.payment;document.querySelectorAll('.pay').forEach(item=>item.classList.toggle('selected',item===button))});
- document.querySelector('#clear-pos').onclick=()=>{if(locked())return;if(cart.length&&!confirm('Vider le panier ? / 清空当前购物车？'))return;cart=[];render()};
+ document.querySelector('#clear-pos').onclick=async()=>{if(locked())return;if(cart.length&&!await BaoDialog.confirm('Vider le panier ? / 清空当前购物车？'))return;cart=[];render()};
  payButton.onclick=async()=>{
   if(payButton.disabled||submitting)return;
   if(!BaoOrders.pending('pos')&&!window.BaoTable?.validate(document.querySelector('[data-pos-service].selected')?.dataset.posService||'堂食'))return;
@@ -192,12 +192,12 @@ function initPOSAdvanced(){
    let order;
    if(pending)order=pending;
    else{
-    if(!await BaoCatalog.refresh()){alert('Impossible de vérifier les prix. Vérifiez la connexion et réessayez. / 无法核对云端价格，请联网后重试');return}
+    if(!await BaoCatalog.refresh()){BaoDialog.alert('Impossible de vérifier les prix. Vérifiez la connexion et réessayez. / 无法核对云端价格，请联网后重试');return}
     const updated=BaoCatalog.reprice(snapshot);cart=updated;
     if(cartSignature(snapshot)!==cartSignature(updated)){
-     render();alert('Prix ou disponibilité modifiés. Vérifiez le panier puis réessayez. Aucune commande enregistrée ; ne facturez pas deux fois. / 商品价格或可售状态已变化，请核对购物车后重试。本次未保存，请勿重复收款。');return;
+     render();BaoDialog.alert('Prix ou disponibilité modifiés. Vérifiez le panier puis réessayez. Aucune commande enregistrée ; ne facturez pas deux fois. / 商品价格或可售状态已变化，请核对购物车后重试。本次未保存，请勿重复收款。');return;
     }
-    if(!cart.length){alert('Ajoutez un produit / 请先添加商品');return}
+    if(!cart.length){BaoDialog.alert('Ajoutez un produit / 请先添加商品');return}
     const now=new Date(),total=totalFor(cart);
     order={id:window.baoOrderId(),day:day(),month:month(),time:now.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}),items:cart.map(item=>({...item})),service:document.querySelector('[data-pos-service].selected')?.dataset.posService||'堂食',total,paidTotal:total,status:'paid',payment,source:'pos',kitchenStatus:'new',corrections:[]};
    }
@@ -206,8 +206,8 @@ function initPOSAdvanced(){
    if(!pending)order.tableNumber=window.BaoTable?.value(order.service)||'';
    const saved=await BaoOrders.submit(order);
    audit(['paid','done'].includes(saved.status)?'POS 收款':'核对旧订单',`${saved.id} · ${money(saved.paidTotal??saved.total)} · ${saved.payment}`);
-   cart=[];render();if(['voided','cancelled'].includes(saved.status))alert(`Commande annulée ou remboursée. Vérifiez les données ; ne facturez pas deux fois. / 此订单已作废或退款，请勿重复收款。\n${saved.id}`);else await showPOSReceipt(saved);
-  }catch(error){alert(window.BaoPosFrench?.error(error.message)||error.message)}
+   cart=[];render();if(['voided','cancelled'].includes(saved.status))BaoDialog.alert(`Commande annulée ou remboursée. Vérifiez les données ; ne facturez pas deux fois. / 此订单已作废或退款，请勿重复收款。\n${saved.id}`);else await showPOSReceipt(saved);
+  }catch(error){BaoDialog.alert(window.BaoPosFrench?.error(error.message)||error.message)}
   finally{submitting=false;document.querySelector('main').inert=false;render();window.dispatchEvent(new Event('bao-submit-state'))}
  };
  window.addEventListener('bao-catalog-change',render);render();input.focus();
@@ -221,8 +221,8 @@ function kitchenItemText(item){
  }
  return escape(item.code||'')+' · '+escape(item.dish)+(item.filling?' · 馅料：'+escape(item.filling)+' · 做法：'+escape(item.style):'')+' × '+quantity(item);
 }
-function initKitchenDetailed(){const board=document.querySelector('#kitchen-board'),columns=[['new','待制作 · À préparer','making','开始制作'],['making','制作中 · En cours','ready','待取餐'],['ready','待取餐 · Prêt','complete','完成出餐']];function render(){const list=orders().filter(order=>paid(order)&&!['cancelled','voided'].includes(order.status)&&(order.kitchenStatus||'new')!=='complete');board.innerHTML=columns.map(([status,title,next,label])=>`<section class="kitchen-column"><p class="eyebrow">${title} <span class="pill">${list.filter(order=>(order.kitchenStatus||'new')===status).length} 单</span></p>${list.filter(order=>(order.kitchenStatus||'new')===status).map(order=>`<article class="ticket"><h3>取餐号 ${escape(order.pickupNumber||order.id)}</h3><small>${escape(order.time)} · ${order.source==='pos'?'POS':'自助'} · ${escape(order.service||'堂食')}${order.tableNumber?' · '+escape(order.tableNumber)+' 桌':''} · ${money(order.total)}${order.isTest?' · 模拟':''}</small><p>${order.items.map(kitchenItemText).join('<br>')}</p><button class="button ${status==='ready'?'green':''}" data-id="${order.id}" data-next="${next}">${label}</button></article>`).join('')||'<p class="empty">暂无订单</p>'}</section>`).join('');board.querySelectorAll('button').forEach(button=>button.onclick=async()=>{button.disabled=true;try{await BaoOrders.change(button.dataset.id,'kitchen',button.dataset.next);render()}catch(error){alert(error.message)}finally{button.disabled=false}})}window.addEventListener('bao-orders-change',render);render()}
-async function deleteOrderNow(id){try{await BaoOrders.change(id,"void");initAdminDelete()}catch(error){alert(error.message)}}
+function initKitchenDetailed(){const board=document.querySelector('#kitchen-board'),columns=[['new','待制作 · À préparer','making','开始制作'],['making','制作中 · En cours','ready','待取餐'],['ready','待取餐 · Prêt','complete','完成出餐']];function render(){const list=orders().filter(order=>paid(order)&&!['cancelled','voided'].includes(order.status)&&(order.kitchenStatus||'new')!=='complete');board.innerHTML=columns.map(([status,title,next,label])=>`<section class="kitchen-column"><p class="eyebrow">${title} <span class="pill">${list.filter(order=>(order.kitchenStatus||'new')===status).length} 单</span></p>${list.filter(order=>(order.kitchenStatus||'new')===status).map(order=>`<article class="ticket"><h3>取餐号 ${escape(order.pickupNumber||order.id)}</h3><small>${escape(order.time)} · ${order.source==='pos'?'POS':'自助'} · ${escape(order.service||'堂食')}${order.tableNumber?' · '+escape(order.tableNumber)+' 桌':''} · ${money(order.total)}${order.isTest?' · 模拟':''}</small><p>${order.items.map(kitchenItemText).join('<br>')}</p><button class="button ${status==='ready'?'green':''}" data-id="${order.id}" data-next="${next}">${label}</button></article>`).join('')||'<p class="empty">暂无订单</p>'}</section>`).join('');board.querySelectorAll('button').forEach(button=>button.onclick=async()=>{button.disabled=true;try{await BaoOrders.change(button.dataset.id,'kitchen',button.dataset.next);render()}catch(error){BaoDialog.alert(error.message)}finally{button.disabled=false}})}window.addEventListener('bao-orders-change',render);render()}
+async function deleteOrderNow(id){try{await BaoOrders.change(id,"void");initAdminDelete()}catch(error){BaoDialog.alert(error.message)}}
 function openDeleteDialog(id){
  const dialog=document.createElement('dialog');dialog.className='cleanup-dialog';dialog.setAttribute('aria-labelledby','void-order-title');dialog.setAttribute('aria-describedby','void-order-description');
  dialog.innerHTML='<form method="dialog"><button class="cleanup-close" value="cancel" aria-label="关闭 · Fermer">×</button><p class="cleanup-eyebrow">订单处理 · Gestion des commandes</p><h2 id="void-order-title">作废订单 · Invalider</h2><p class="void-order-id" style="overflow-wrap:anywhere;padding:12px;background:#eaf3ff;border-radius:10px"></p><p id="void-order-description">确认作废这笔订单？作废后将从营业额统计及厨房进行中的订单中移除，历史记录仍会保留。<br><small>La commande sera exclue du chiffre d’affaires et retirée de la cuisine. Son historique sera conservé.</small></p><div class="cleanup-actions"><button class="button" value="cancel" autofocus>取消 · Annuler</button><button class="button danger" value="confirm">确认作废 · Invalider</button></div></form>';

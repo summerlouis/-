@@ -13,6 +13,7 @@
   dialog.querySelector('.cleanup-submit').textContent=paying?'Confirmer et envoyer en cuisine / 确认并发送厨房':'Invalider · 确认作废';
   dialog.addEventListener('close',()=>{const ok=dialog.returnValue==='confirm';dialog.remove();resolve(ok)},{once:true});document.body.append(dialog);dialog.showModal();
  })}
+ window.BaoPaymentConfirm=confirmPayment;
  const mock=window.BaoRuntime?.mode==='mock';
  const section=document.createElement('section');section.className='panel pending-payments';
  section.innerHTML='<h2>自助待收款 <span id="pending-payment-count" class="pill">0</span></h2><p class="note">核对订单并实际收到款项后，再点“确认已收款”。金额按顾客提交时的价格；确认后计入营业额并送厨房。</p><div id="pending-payment-list"></div><p id="pending-payment-message" role="status" aria-live="polite"></p>';
@@ -20,7 +21,7 @@
  document.querySelector('.layout').before(section);
  let busy=false;
  function render(){
-  const orders=BaoOrders.all().filter(o=>o.status==='pending'&&o.source==='self');
+  const orders=BaoOrders.all().filter(o=>o.status==='pending'&&o.source==='self'&&Boolean(o.isTest||o.paymentMode==='mock')===mock);
   section.querySelector('#pending-payment-count').textContent=orders.length;
   const holder=section.querySelector('#pending-payment-list'),selected=new Map([...holder.querySelectorAll('select')].map(el=>[el.dataset.id,el.value]));
   if(busy)return;
@@ -35,7 +36,7 @@
    busy=true;let accepted=false;try{accepted=await confirmPayment(order,action,method)}finally{busy=false}if(!accepted){render();return;}
    busy=true;holder.querySelectorAll('button,select').forEach(el=>el.disabled=true);
    const message=section.querySelector('#pending-payment-message');message.textContent='Enregistrement… Ne facturez pas deux fois. / 正在保存，请勿重复收款';
-   try{await BaoOrders.change(id,action,undefined,{payment:method});message.textContent=['pay','mock-pay'].includes(action)?'订单 '+order.pickupNumber+' : envoyée en cuisine / 已登记并发送厨房。':'Commande invalidée / 未付款订单已作废。'}catch(error){message.textContent=window.BaoPosFrench?.error(error.message)||error.message}finally{busy=false;render()}
+   try{await BaoOrders.change(id,action,undefined,{payment:method,receivedConfirmed:action==='pay'});message.textContent=['pay','mock-pay'].includes(action)?'订单 '+order.pickupNumber+' : envoyée en cuisine / 已登记并发送厨房。':'Commande invalidée / 未付款订单已作废。'}catch(error){message.textContent=window.BaoPosFrench?.error(error.message)||error.message}finally{busy=false;render()}
   });
  }
  window.addEventListener('bao-orders-change',render);render();

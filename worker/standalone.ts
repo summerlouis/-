@@ -15,7 +15,7 @@ const staffPages: Record<string, Role[]> = {pos:['admin','cashier'], kitchen:['a
 export default {
   async fetch(request: Request, env: Cloudflare.Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url), path = url.pathname;
-    if (env.BAO_STANDALONE !== 'true' || env.PAYMENT_MODE !== 'mock' || !env.STORE_ID || !env.SESSION_SECRET || env.SESSION_SECRET.length < 32) return json({error:'测试服务器尚未配置，请运行 npm run local:setup'},503);
+    if (env.BAO_STANDALONE !== 'true' || !['mock','manual'].includes(env.PAYMENT_MODE||'') || !env.STORE_ID || !env.SESSION_SECRET || env.SESSION_SECRET.length < 32) return json({error:'测试服务器尚未配置，请运行 npm run local:setup'},503);
     if (!['GET','HEAD','OPTIONS'].includes(request.method) || path === '/api/events') {
       const origin = request.headers.get('origin');
       if (origin && origin !== url.origin) return json({error:'请求来源无效'},403);
@@ -49,7 +49,7 @@ export default {
       return secureResponse(json({ok:true,role}));
     }
     if (path === '/api/runtime.js') {
-      const config = {cloud:true,mode:'mock',storeId:env.STORE_ID,role:session.role,sessionId:session.customerId,events:true,imageUploads:!!env.BUCKET};
+      const config = {cloud:true,mode:env.PAYMENT_MODE,storeId:env.STORE_ID,role:session.role,sessionId:session.customerId,events:true,imageUploads:!!env.BUCKET};
       return secureResponse(new Response('window.BAO_CLOUD=true;window.BaoRuntime='+JSON.stringify(config)+';', {headers:{'Content-Type':'text/javascript; charset=utf-8','Cache-Control':'no-store'}}));
     }
     // Never trust identity headers supplied by a browser or proxy outside this worker.

@@ -38,7 +38,8 @@
   await refresh();return {imported,duplicates,failed};
  }
  function download(name,content,type='application/json'){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([content],{type}));a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
- window.BaoOrders={all:()=>state.orders.map(o=>({...o,day:o.dateKey?new Date(o.dateKey+'T12:00:00').toDateString():o.day})),closures:()=>state.closures,refresh,submit,change,close,importOrders,download,legacy:()=>read(legacyKey,[]),pending:source=>read(pendingPrefix+source,null),ready:()=>ready};
+ function paymentLabel(o){const test=o.isTest||o.paymentMode==='mock';const prefix=test?'Simulation · 模拟｜':'Réel · 正式｜';if(o.status==='pending')return prefix+'À payer · 待付款';if(o.status==='voided')return prefix+'Invalidée · 已作废';if(o.status==='cancelled')return prefix+(test?'Annulée · 已取消（无实际退款）':Number(o.refundAmount)>0?'Remboursement enregistré · 已登记退款':'Annulée · 已取消');return prefix+(test?'Paiement simulé · 已模拟付款（实收 0 €）':'Encaissement confirmé · 已确认收款')}
+ window.BaoOrders={paymentLabel,all:()=>state.orders.map(o=>({...o,day:o.dateKey?new Date(o.dateKey+'T12:00:00').toDateString():o.day})),closures:()=>state.closures,refresh,submit,change,close,importOrders,download,legacy:()=>read(legacyKey,[]),pending:source=>read(pendingPrefix+source,null),ready:()=>ready};
  window.addEventListener('DOMContentLoaded',()=>{const target=document.querySelector('[data-catalog-status]')||document.querySelector('header');if(target){const el=document.createElement('p');el.className='sync-status';el.dataset.ordersStatus='';el.setAttribute('role','status');target.after(el)}status('正在读取订单…');refresh()});
  window.addEventListener('focus',refresh);window.addEventListener('online',refresh);window.addEventListener('offline',()=>status('网络已断开：请恢复网络后再提交；购物车会保留。',true));
  document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh()});

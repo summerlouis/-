@@ -59,6 +59,7 @@ export async function POST(req:Request){
  if(!Array.isArray(draft.items)||!draft.items.length||draft.items.length>100)return json({error:'订单需包含 1 至 100 行商品'},400);
  const importing=data.action==='import';
  if(!importing&&!access.mock&&draft.source!=='self'&&!['现金','银行卡','二维码'].includes(draft.payment))return json({error:'请选择实际收款方式'},400);
+ if(!importing&&!access.mock&&draft.source!=='self'&&draft.receivedConfirmed!==true)return json({error:'请先确认已实际收到款项 / Confirmez l’encaissement réel'},400);
  const tableNumber=draft.service==='打包'?'':text(draft.tableNumber,100).trim();
  if((access.mock&&draft.service!=='打包'&&!tableNumber)||(tableNumber&&!/^[\p{L}\p{N} -]{1,20}$/u.test(tableNumber)))return json({error:'堂食请填写桌号（1 至 20 位文字或数字）'},400);
  const available=await catalog(user);
@@ -114,6 +115,7 @@ export async function PATCH(req:Request){
   if(order.items.some((item:{code:string})=>(!available.find(p=>p.code===item.code)?.active||(item as any).components?.some((c:any)=>!available.find(p=>p.code===c.code)?.active))))return json({error:'订单中有已下架商品，请联系店员作废后重新点单'},409);
   order.status='paid';order.paidTotal=0;order.simulatedTotal=order.total;order.payment='模拟付款';order.kitchenStatus='new';order.paidAt=now;action='模拟付款成功，不扣款、不计入营业收入';
  }else if(data.action==='pay'){
+  if(data.receivedConfirmed!==true)return json({error:'请确认实际收款 / Confirmez l’encaissement réel'},400);
   if(access.mock||order.isTest)return json({error:'测试订单只能使用模拟付款'},403);
   if(order.status!=='pending')return json({error:'该订单已处理，请核对收款记录，不要重复收款'},409);
   if(!['现金','银行卡','二维码'].includes(data.payment))return json({error:'请选择实际收款方式'},400);
@@ -133,6 +135,10 @@ export async function PATCH(req:Request){
   order.status='cancelled';order.kitchenStatus='cancelled';order.cancelledAt=now;order.refundAmount=0;action='收银取消本次模拟订单，厨房同步停止制作';
  }else if(data.action==='refund'||data.action==='void'){
   if(!['paid','done'].includes(order.status)&&!(data.action==='void'&&order.status==='pending'))return json({error:'该订单已取消、作废或尚未付款'},409);
+  const simulated=order.isTest||order.paymentMode==='mock';
+  if(!simulated&&data.action==='void'&&order.status!=='pending')return json({error:'已收款订单请通过退款处理，不能直接作废 / Utilisez le remboursement'},409);
+  if(!simulated&&data.action==='refund'){if(data.refundConfirmed!==true||typeof data.reason!=='string'||!data.reason.trim()||data.reason.length>300)return json({error:'请确认已实际退款并填写原因 / Confirmez le remboursement et son motif'},400);order.refundReason=data.reason.trim();order.refundMethod=order.payment;}
+  order.kitchenStatus=data.action==='refund'?'cancelled':'voided';
   order.status=data.action==='refund'?'cancelled':'voided';order.refundAmount=Math.round((Number(order.paidTotal)+(order.corrections||[]).reduce((sum:number,c:{amount:number})=>sum+Number(c.amount||0),0))*100)/100;order.refundedAt=now;action=data.action==='refund'?'登记退款':'作废订单';
  }else return json({error:'不支持的操作'},400);
  order.history=[...(order.history||[]),{time:now,action}];

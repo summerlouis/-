@@ -73,3 +73,19 @@ body[data-page=pos] .pos-cart-name{display:block;font-size:17px;line-height:1.35
 
 /* Kitchen bundles: explicit component quantities and a separate drinks section. */
 .kitchen-menu{display:block;margin:12px 0;border:1px solid #c5d9ed;border-radius:12px;overflow:hidden;background:#f7fbff}.kitchen-menu-title{display:block;padding:12px;background:#123f72;color:white;font-size:16px;line-height:1.45}.kitchen-component-heading{display:block;padding:10px 12px 4px;font-weight:800;color:#365c82;font-size:14px}.kitchen-component{display:flex;gap:10px;padding:12px;border-bottom:1px solid #d9e5f1;break-inside:avoid}.kitchen-component-qty{flex-shrink:0;align-self:flex-start;min-width:42px;padding:6px;background:#123f72;border-radius:8px;color:#fff;font-size:22px;text-align:center}.kitchen-component-detail{display:block;min-width:0;flex:1;overflow-wrap:anywhere}.kitchen-component-detail>b{display:block;font-size:17px}.kitchen-component-detail>small{display:block;margin-top:3px}.kitchen-filling,.kitchen-cooking{display:block;margin-top:8px;font-size:12px;color:#526c84}.kitchen-filling strong,.kitchen-cooking strong{font-size:15px;line-height:1.5;color:#123f72}.kitchen-cooking{padding:6px 8px;background:#fff0cb;border-radius:6px}.kitchen-drinks{display:block;background:#eaf4ef}.kitchen-drinks .kitchen-component-qty{background:#25654b}
+/* Compact kitchen tickets while retaining readable bilingual details. */
+body[data-page="kitchen"] .kitchen-menu{margin:6px 0;border-radius:8px}
+body[data-page="kitchen"] .kitchen-menu-title{padding:7px 9px;font-size:14px;line-height:1.3}
+body[data-page="kitchen"] .kitchen-component-heading{padding:6px 9px 2px;font-size:12px}
+body[data-page="kitchen"] .kitchen-component{gap:8px;padding:7px 9px}
+body[data-page="kitchen"] .kitchen-component-qty{min-width:32px;padding:4px 5px;border-radius:6px;font-size:18px;line-height:1.25}
+body[data-page="kitchen"] .kitchen-component-detail>b{font-size:14px;line-height:1.3}
+body[data-page="kitchen"] .kitchen-component-detail>small{font-size:11px;line-height:1.35;margin-top:2px}
+body[data-page="kitchen"] .kitchen-filling,body[data-page="kitchen"] .kitchen-cooking{margin-top:4px;font-size:11px;line-height:1.4}
+body[data-page="kitchen"] .kitchen-filling br,body[data-page="kitchen"] .kitchen-cooking br{display:none}
+body[data-page="kitchen"] .kitchen-filling strong,body[data-page="kitchen"] .kitchen-cooking strong{font-size:12px;line-height:1.4;margin-left:5px}
+body[data-page="kitchen"] .kitchen-cooking{padding:4px 6px;border-radius:4px}
+body[data-page="kitchen"] .ticket{padding:10px;margin-bottom:10px}
+body[data-page="kitchen"] .ticket h3{margin:0 0 5px;font-size:17px}
+body[data-page="kitchen"] .ticket>p{margin:6px 0}
+body[data-page="kitchen"] .ticket>.button{min-height:42px;padding:8px 10px}

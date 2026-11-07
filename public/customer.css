@@ -159,3 +159,12 @@ body[data-page="self"] .sync-tools button { border:0; background:transparent; co
 /* High-contrast price badges matching the menu's blue palette. */
 .product-card .product-info>b{background:#123f72;color:#fff;border-radius:9px;padding:6px 8px;font-size:22px;line-height:1.2;letter-spacing:0;box-shadow:0 2px 5px #123f7214}
 @media(max-width:410px){.product-card .product-info>b{font-size:20px;padding:6px}}
+/* Customer next step: large pickup number and explicit payment/kitchen progress. */
+#receipt-dialog .pickup{background:#e8f2ff;border:1px solid #b9d4f3;border-radius:18px;padding:18px;margin:16px 0;text-align:center}
+#receipt-dialog .pickup strong{display:block;font-size:clamp(48px,10vw,76px);line-height:1.1;letter-spacing:.06em;color:#123f77;font-variant-numeric:tabular-nums}
+#receipt-instructions{background:#edf4fc;border-radius:12px;padding:14px;line-height:1.65;text-align:left}
+.receipt-progress{display:flex;gap:6px;list-style:none;padding:0;margin:14px 0}.receipt-progress li{flex:1;padding:10px 5px;border-radius:9px;background:#edf0f4;color:#50627c;font-size:13px;text-align:center}.receipt-progress .current{background:#164b83;color:white;font-weight:700}.receipt-progress .complete{background:#dcefe7;color:#21634d}
+#receipt-dialog[data-phase=ready] .pickup{background:#e0f3e9;border-color:#77b596}#receipt-dialog[data-phase=ready] .pickup strong{color:#21634d}
+#receipt-dialog[data-phase=pending] #receipt-instructions{background:#fff3d7}
+.receipt-progress[hidden]{display:none}
+#receipt-dialog #pickup-label{color:#365c7a;letter-spacing:.03em;font-weight:600}

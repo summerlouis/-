@@ -244,6 +244,26 @@ function receiptStatus(order) {
   return order.isTest?'待模拟付款':'待柜台付款';
 }
 
+function renderReceiptGuide(order) {
+  const id=window.BaoLanguage?.current()==='id';
+  const text=(fr,ind,zh)=>(id?ind:fr)+' · '+zh;
+  const test=order.isTest||order.paymentMode==='mock', closed=['cancelled','voided'].includes(order.status);
+  const paid=['paid','done'].includes(order.status), done=paid&&(order.status==='done'||order.kitchenStatus==='complete'), ready=paid&&!done&&order.kitchenStatus==='ready';
+  const making=paid&&order.kitchenStatus==='making', takeaway=order.service==='打包';
+  const phase=closed?'closed':done?'done':ready?'ready':paid?'preparing':'pending';
+  receipt.dataset.phase=phase;
+  const put=(selector,value)=>{const el=receipt.querySelector(selector);el.dataset.noTranslate='';if(el.textContent!==value)el.textContent=value};
+  put('#receipt-title',closed?text('Commande annulée','Pesanan dibatalkan','订单已取消／作废'):done?text('Commande retirée','Pesanan sudah diambil','已完成取餐'):ready?text('Votre commande est prête','Pesanan siap diambil','可以取餐'):paid?(test?text('Paiement simulé — préparation','Pembayaran simulasi — persiapan','已模拟付款，制作流程中'):making?text('Paiement reçu — en préparation','Pembayaran diterima — sedang disiapkan','已收款，正在制作'):text('Paiement reçu — en attente de préparation','Pembayaran diterima — menunggu persiapan','已收款，等待制作')):test?text('Commande test — paiement simulé requis','Pesanan uji — menunggu pembayaran simulasi','测试订单，请模拟付款'):text('Passez à la caisse pour payer','Silakan bayar di kasir','请到收银台付款'));
+  put('#pickup-label',text('Votre numéro de retrait','Nomor pengambilan Anda','取餐号'));
+  let message=closed?text('Contactez la caisse. Ne payez pas à nouveau cette commande.','Hubungi kasir. Jangan bayar pesanan ini lagi.','请联系收银员核对，请勿重复付款。'):done?text('Merci de votre visite !','Terima kasih atas kunjungan Anda!','感谢光临！'):!paid?(test?text('Utilisez le bouton de simulation ci-dessous. Aucun débit réel.','Gunakan tombol simulasi di bawah. Tidak ada pembayaran nyata.','点击下方模拟付款，不会实际扣款。'):text('Présentez ce numéro à la caisse. La préparation commencera après confirmation du paiement.','Tunjukkan nomor ini di kasir. Pesanan disiapkan setelah pembayaran dikonfirmasi.','请向收银员出示此号码，确认收到款项后安排制作。')):ready?(takeaway?text('Présentez ce numéro au comptoir et récupérez votre commande à emporter, boissons comprises.','Tunjukkan nomor ini di konter dan ambil pesanan bungkus beserta minumannya.','请出示取餐号，领取打包餐品，并核对饮品。'):text('Présentez ce numéro au comptoir pour retirer votre repas, puis rejoignez votre table.','Tunjukkan nomor ini di konter untuk mengambil makanan, lalu kembali ke meja Anda.','请出示取餐号领取餐品，然后返回座位用餐。')):takeaway?text('Attendez que ce numéro soit prêt avant de venir récupérer votre commande à emporter.','Tunggu sampai nomor ini siap sebelum mengambil pesanan bungkus.','请等此号码显示可以取餐后，再领取打包餐品。'):text('Vous pouvez patienter à votre table. Venez au comptoir lorsque ce numéro est prêt.','Silakan menunggu di meja. Datang ke konter saat nomor ini siap.','可先在座位等候，显示可以取餐后到取餐处领取。');
+  put('#receipt-instructions',message);
+  let guide=receipt.querySelector('.receipt-progress');if(!guide){guide=document.createElement('ol');guide.className='receipt-progress';guide.dataset.noTranslate='';receipt.querySelector('.pickup').after(guide)}
+  guide.hidden=closed;guide.replaceChildren();
+  [text('Paiement','Pembayaran','付款'),text('Préparation','Persiapan','制作'),text('Retrait','Pengambilan','取餐')].forEach((label,i)=>{const li=document.createElement('li');li.textContent=label;const step=done?3:ready?2:paid?1:0;li.className=i<step?'complete':i===step?'current':'';if(i===step)li.setAttribute('aria-current','step');guide.append(li)});
+  put('#receipt-total',(takeaway?text('À emporter','Bungkus','打包'):text('Sur place','Makan di tempat','堂食'))+(order.tableNumber?' · '+text('Table','Meja','桌号')+' '+order.tableNumber:'')+' · '+(closed?text('Ne pas payer à nouveau','Jangan bayar lagi','无需再次付款'):test?text('Simulation, aucun débit','Simulasi, tanpa penagihan','模拟金额，实收为零'):paid?text('Payé','Sudah dibayar','已付'):text('À payer','Belum dibayar','待付'))+' '+euro(paid&&!test?(order.paidTotal??order.total):order.total));
+}
+
+window.addEventListener('bao-language-change',()=>{if(lastOrder)renderReceipt()});
 function renderReceipt() {
   const entry = document.querySelector('#last-order-button');
   entry.hidden = !lastOrder;
@@ -260,6 +280,7 @@ function renderReceipt() {
   document.querySelector('#receipt-items').innerHTML = order.items.map(item => `<li><span>${escape(item.dish)}${item.filling ? ' · ' + escape(item.filling) : ''}${item.style ? ' · ' + escape(item.style) : ''} × ${item.qty}${window.BaoBundles?.html(item)||''}</span><strong>${euro(item.price * item.qty)}</strong></li>`).join('');
   document.querySelector('#receipt-updated').textContent = !navigator.onLine ? '当前离线，显示此设备保存的订单；联网后会再次核对。' : receiptCheckedAt ? `最近核对 ${receiptCheckedAt.toLocaleTimeString()} · 状态变化会自动更新` : '显示此设备保存的订单，正在核对最新状态…';
   if (navigator.onLine && document.querySelector('[data-orders-status].sync-error')) document.querySelector('#receipt-updated').textContent = '暂时无法核对最新状态，以下为本机保存记录，请联网后重试。';
+  renderReceiptGuide(order);
 }
 
 function reconcileReceipt() {

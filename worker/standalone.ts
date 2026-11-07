@@ -1,3 +1,4 @@
+import {languageAPI,languageSetting} from './language';
 import {auditView} from './audit-view';
 import {deviceValid,manageDevices,hashCode} from './devices';
 import * as orders from '../app/api/orders/route';
@@ -32,6 +33,7 @@ export default {
       if (!previous || session !== previous) next.headers.set('Set-Cookie',await sessionCookie(session,request,env));
       return next;
     };
+    if(path==='/api/language')return secureResponse(await languageAPI(request,env,session));
     if(path==='/api/audit-view')return auditView(request,env,session);
     if(path==='/api/devices')return manageDevices(request,env,session);
     if (path === '/api/device-session') {
@@ -49,7 +51,8 @@ export default {
       return secureResponse(json({ok:true,role}));
     }
     if (path === '/api/runtime.js') {
-      const config = {cloud:true,mode:env.PAYMENT_MODE,storeId:env.STORE_ID,role:session.role,sessionId:session.customerId,events:true,imageUploads:!!env.BUCKET};
+      const preference=await languageSetting(env,session.store);
+      const config = {language:preference.language,languageRevision:preference.revision,cloud:true,mode:env.PAYMENT_MODE,storeId:env.STORE_ID,role:session.role,sessionId:session.customerId,events:true,imageUploads:!!env.BUCKET};
       return secureResponse(new Response('window.BAO_CLOUD=true;window.BaoRuntime='+JSON.stringify(config)+';', {headers:{'Content-Type':'text/javascript; charset=utf-8','Cache-Control':'no-store'}}));
     }
     // Never trust identity headers supplied by a browser or proxy outside this worker.

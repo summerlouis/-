@@ -1,0 +1,5 @@
+CREATE TABLE IF NOT EXISTS store_preferences (
+ store TEXT PRIMARY KEY,
+ language TEXT NOT NULL DEFAULT 'fr',
+ revision INTEGER NOT NULL DEFAULT 1
+);

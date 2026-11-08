@@ -1,12 +1,12 @@
 export type Role = 'admin' | 'cashier' | 'kitchen' | 'customer';
-export type Session = {deviceId?: string; role: Role; customerId: string; store: string; expires: number};
-const name = 'bao_device_session';
+export type Session = {deviceId?: string; role: Role; customerId: string; store: string; expires: number; owner?: boolean};
+const cookieName=(env:Cloudflare.Env)=>'bao_device_session'+((env as any).STORE_SCOPE?'_'+env.STORE_ID:'');
 const encode = (bytes: Uint8Array) => btoa(String.fromCharCode(...bytes)).replaceAll('+', '-').replaceAll('/', '_').replace(/=+$/, '');
 const decode = (value: string) => Uint8Array.from(atob(value.replaceAll('-', '+').replaceAll('_', '/')), c => c.charCodeAt(0));
 const key = (secret: string) => crypto.subtle.importKey('raw', new TextEncoder().encode(secret), {name: 'HMAC', hash: 'SHA-256'}, false, ['sign', 'verify']);
 
 export async function readSession(request: Request, env: Cloudflare.Env): Promise<Session | null> {
-  const token = request.headers.get('cookie')?.split(';').map(s => s.trim()).find(s => s.startsWith(name + '='))?.slice(name.length + 1);
+  const token = request.headers.get('cookie')?.split(';').map(s => s.trim()).find(s => s.startsWith(cookieName(env) + '='))?.slice(cookieName(env).length + 1);
   if (!token || token.length > 2048) return null;
   try {
     const [body, signature] = token.split('.');
@@ -19,7 +19,7 @@ export async function readSession(request: Request, env: Cloudflare.Env): Promis
 export async function sessionCookie(session: Session, request: Request, env: Cloudflare.Env) {
   const body = encode(new TextEncoder().encode(JSON.stringify(session)));
   const signature = encode(new Uint8Array(await crypto.subtle.sign('HMAC', await key(env.SESSION_SECRET!), new TextEncoder().encode(body))));
-  return `${name}=${body}.${signature}; HttpOnly; SameSite=Strict; Path=/; Max-Age=2592000${new URL(request.url).protocol === 'https:' ? '; Secure' : ''}`;
+  return `${cookieName(env)}=${body}.${signature}; HttpOnly; SameSite=Strict; Path=${(env as any).STORE_SCOPE||'/'}; Max-Age=2592000${new URL(request.url).protocol === 'https:' ? '; Secure' : ''}`;
 }
 
 export function newSession(role: Role, store: string, customerId = crypto.randomUUID()): Session {

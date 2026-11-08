@@ -1,3 +1,4 @@
+import {storesAPI,owner,ensureRoot,result} from './stores';
 import {languageAPI,languageSetting} from './language';
 import {auditView} from './audit-view';
 import {deviceValid,manageDevices,hashCode} from './devices';
@@ -13,7 +14,7 @@ export { OrderEvents } from './order-events';
 const json = (body: unknown, status = 200) => Response.json(body, {status, headers: {'Cache-Control': 'no-store'}});
 const staffPages: Record<string, Role[]> = {pos:['admin','cashier'], kitchen:['admin','cashier','kitchen'], admin:['admin'], owner:['admin']};
 
-export default {
+const service = {
   async fetch(request: Request, env: Cloudflare.Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url), path = url.pathname;
     if (env.BAO_STANDALONE !== 'true' || !['mock','manual'].includes(env.PAYMENT_MODE||'') || !env.STORE_ID || !env.SESSION_SECRET || env.SESSION_SECRET.length < 32) return json({error:'测试服务器尚未配置，请运行 npm run local:setup'},503);
@@ -25,6 +26,7 @@ export default {
     let previous = await readSession(request, env);
     if(previous&&!await deviceValid(previous,request,env))previous=null;
     let session = previous || newSession('customer', env.STORE_ID);
+    if(path==='/api/orders'&&request.method==='POST'&&!(env as any).STORE_OPEN)return json({error:'本店暂停营业，请联系店员'},409);
     const secureResponse = async (response: Response) => {
       if (response.status === 101) return response;
       const next = new Response(response.body, response);
@@ -44,7 +46,7 @@ export default {
       let role: Role | null = null;
       for (const [candidate,expected] of [['admin',env.ADMIN_DEVICE_CODE],['cashier',env.CASHIER_DEVICE_CODE],['kitchen',env.KITCHEN_DEVICE_CODE]] as const) {
         const override=await env.DB!.prepare('SELECT hash FROM pairing_codes WHERE store=? AND role=?').bind(env.STORE_ID,candidate).first<{hash:string}>();
-        if (override ? await hashCode(code)===override.hash : await matchesCode(code,expected)) role = candidate;
+        if (override ? await hashCode(code)===override.hash : await matchesCode(code,((env as any).STORE_SCOPE?undefined:expected))) role = candidate;
       }
       if (!role) return json({error:'设备配对码无效，请向店主管理员获取最新配对码'},401);
       session = newSession(role,env.STORE_ID,session.customerId);
@@ -52,7 +54,7 @@ export default {
     }
     if (path === '/api/runtime.js') {
       const preference=await languageSetting(env,session.store);
-      const config = {language:preference.language,languageRevision:preference.revision,cloud:true,mode:env.PAYMENT_MODE,storeId:env.STORE_ID,role:session.role,sessionId:session.customerId,events:true,imageUploads:!!env.BUCKET};
+      const config = {language:preference.language,languageRevision:preference.revision,cloud:true,mode:env.PAYMENT_MODE,storeId:env.STORE_ID,storeName:(env as any).STORE_NAME,storeOpen:!!(env as any).STORE_OPEN,owner:!!session.owner||(!(env as any).STORE_SCOPE&&session.role==='admin'),role:session.role,sessionId:session.customerId,events:true,imageUploads:!!env.BUCKET};
       return secureResponse(new Response('window.BAO_CLOUD=true;window.BaoRuntime='+JSON.stringify(config)+';', {headers:{'Content-Type':'text/javascript; charset=utf-8','Cache-Control':'no-store'}}));
     }
     // Never trust identity headers supplied by a browser or proxy outside this worker.
@@ -93,7 +95,7 @@ export default {
     }
     const entry = path.replace(/^\//,'').replace(/\.html$/,'');
     if (entry === 'cashier') return Response.redirect(new URL('/pos',url),307);
-    if (staffPages[entry] && !staffPages[entry].includes(session.role)) return Response.redirect(new URL('/device.html?next='+encodeURIComponent('/'+entry),url),307);
+    if (staffPages[entry] && !staffPages[entry].includes(session.role)) return Response.redirect(new URL(((env as any).STORE_SCOPE||'/')+'device.html?next='+encodeURIComponent('/'+entry),url),307);
     const assetURL = new URL(url);
     if (path === '/') assetURL.pathname = '/index.html';
     else if (staffPages[entry]) assetURL.pathname = '/'+entry+'.html';
@@ -103,3 +105,17 @@ export default {
     return result;
   },
 };
+
+export default {async fetch(request:Request,env:Cloudflare.Env,ctx:ExecutionContext):Promise<Response>{
+ const url=new URL(request.url),match=url.pathname.match(/^\/s\/(shop-[a-f0-9]{8})\/(.*)$/),prefix=match?'/s/'+match[1]+'/':'';
+ if(url.pathname==='/api/stores')return storesAPI(request,env);
+ await ensureRoot(env);
+ const id=match?match[1]:env.STORE_ID,store=await env.DB!.prepare('SELECT * FROM stores WHERE id=?').bind(id).first<any>();if(!store)return result({error:'门店不存在'},404);
+ const scoped={...env,STORE_ID:id,STORE_SCOPE:prefix,STORE_NAME:store.name,STORE_OPEN:store.open} as Cloudflare.Env;
+ let req=request;
+ if(match){url.pathname='/'+match[2];const headers=new Headers(request.headers);const local=await readSession(request,scoped);if(!local||local.owner){const root=await owner(request,env);if(root){const cookie=await sessionCookie({...root,store:id,owner:true},request,scoped);headers.set('cookie',(headers.get('cookie')||'')+'; '+cookie.split(';')[0])}else if(local?.owner){headers.set('cookie',(headers.get('cookie')||'').split(';').filter(v=>!v.trim().startsWith('bao_device_session_'+id+'=')).join(';'))}}req=new Request(url,{method:request.method,headers,body:request.body,redirect:request.redirect});}
+ const response=await service.fetch(req,scoped,ctx);
+ if(response.status===101)return response;
+ if(response.headers.get('Content-Type')?.includes('text/html')&&response.ok){let html=await response.text();if(prefix)html=html.replace(/(src|href)="\/(?!\/)/g,'$1="'+prefix);html=html.replace('<head>','<head><script src="'+(prefix||'/')+'store-scope.js"></script>');html=html.replace('</body>','<script src="stores-ui.js"></script></body>');return new Response(html,{status:response.status,headers:response.headers});}
+ return response;
+}};

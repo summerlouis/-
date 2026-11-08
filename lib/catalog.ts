@@ -6,17 +6,19 @@ export function validPrice(price:unknown):price is number {
   return typeof price === 'number' && Number.isFinite(price) && price >= 0 && price <= 99999.99 && Math.abs(price * 100 - Math.round(price * 100)) < 0.000001;
 }
 export async function catalog(userId:string) {
+  const seed=await env.DB!.prepare('SELECT body FROM catalog_seeds WHERE user_id=?').bind(userId).first<{body:string}>();
+  const baseProducts:typeof defaults=seed?JSON.parse(seed.body):defaults;
   const [custom, overrides] = await Promise.all([
     env.DB!.prepare('SELECT code,category,dish,fr,cents,active,image_id FROM catalog_products WHERE user_id=? ORDER BY created_at,code').bind(userId).all<{code:string,category:string,dish:string,fr:string,cents:number,active:number,image_id:string|null}>(),
     env.DB!.prepare('SELECT code,cents,active,revision,deleted,image_id,sold_out,bundle_json FROM product_prices WHERE user_id=?').bind(userId).all<{code:string,cents:number,active:number,revision:number,deleted:number,image_id:string|null,sold_out:number,bundle_json:string|null}>(),
   ]);
   const prices = new Map(overrides.results.map(row => [row.code,row]));
-  const products = [...defaults.map(p=>({...p,imageId:null as string|null})), ...custom.results.map(({cents,active,image_id,...p}) => ({...p,price:cents/100,active:Boolean(active),imageId:image_id}))];
+  const products = [...baseProducts.map(p=>({...p,imageId:null as string|null})), ...custom.results.map(({cents,active,image_id,...p}) => ({...p,price:cents/100,active:Boolean(active),imageId:image_id}))];
   const result=products.map(p => {
     const row = prices.get(p.code);
     const imageId=row?row.image_id:p.imageId;
     const config=row?.bundle_json?JSON.parse(row.bundle_json):null;
-    return {...p,...(config?{dish:config.dish,fr:config.fr,bundle:config.bundle}:{}),manualSoldOut:Boolean(row?.sold_out),soldOut:Boolean(row?.sold_out),listed:row?.deleted?false:row?Boolean(row.active):p.active,imageId,imageUrl:imageId?'/api/product-images/'+imageId:null,price:row?row.cents/100:p.price,active:row?.deleted||row?.sold_out?false:row?Boolean(row.active):p.active,revision:row?.revision??0,deleted:Boolean(row?.deleted)};
+    return {...p,...(config?{dish:config.dish,fr:config.fr,bundle:config.bundle}:{}),manualSoldOut:Boolean(row?.sold_out),soldOut:Boolean(row?.sold_out),listed:row?.deleted?false:row?Boolean(row.active):p.active,imageId,imageUrl:imageId?(userId==='store:'+env.STORE_ID?'':'/s/'+userId.slice(6))+'/api/product-images/'+imageId:null,price:row?row.cents/100:p.price,active:row?.deleted||row?.sold_out?false:row?Boolean(row.active):p.active,revision:row?.revision??0,deleted:Boolean(row?.deleted)};
   });
   return result.map(p=>{const bundle=(p as any).bundle;if(!bundle)return p;const possible=bundle.mains.some((code:string)=>result.some(x=>x.code===code&&x.active))&&bundle.drinks.some((code:string)=>result.some(x=>x.code===code&&x.active));return {...p,active:p.active&&possible,soldOut:p.soldOut||!possible}});
 }

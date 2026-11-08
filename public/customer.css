@@ -168,3 +168,4 @@ body[data-page="self"] .sync-tools button { border:0; background:transparent; co
 #receipt-dialog[data-phase=pending] #receipt-instructions{background:#fff3d7}
 .receipt-progress[hidden]{display:none}
 #receipt-dialog #pickup-label{color:#365c7a;letter-spacing:.03em;font-weight:600}
+.cart-product-edit{display:block;text-align:left;background:#eaf3ff;color:#164b83;border:1px solid #bdd4ef;border-radius:8px;padding:8px 10px;font:inherit;font-weight:700;cursor:pointer}.cart-product-edit:focus-visible{outline:3px solid #367bcb;outline-offset:2px}.bundle-edit-links{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}.bundle-edit-links button{background:#eaf3ff;color:#164b83}

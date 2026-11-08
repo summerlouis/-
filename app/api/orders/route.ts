@@ -3,9 +3,9 @@ import { env } from 'cloudflare:workers';
 import { catalog } from '../../../lib/catalog';
 import { orderAccess, notifyOrders } from '../../../lib/order-access';
 export const dynamic='force-dynamic';
-type Row={sequence:number,order_id:string,month:string,body:string,revision:number};
+type Row={pickup_no?:number,sequence:number,order_id:string,month:string,body:string,revision:number};
 const json=(body:unknown,status=200)=>Response.json(body,{status,headers:{'Cache-Control':'no-store'}});
-const decode=(r:Row)=>({...JSON.parse(r.body),id:r.order_id,revision:r.revision,pickupNumber:String(r.sequence).padStart(4,'0')});
+const decode=(r:Row)=>({...JSON.parse(r.body),id:r.order_id,revision:r.revision,pickupNumber:String(r.pickup_no??r.sequence).padStart(4,'0')});
 const text=(v:unknown,max=160)=>typeof v==='string'?v.slice(0,max):'';
 async function row(user:string,id:string){return env.DB!.prepare('SELECT * FROM sales WHERE user_id=? AND order_id=?').bind(user,id).first<Row>()}
 function identity(req:Request){return req.headers.get('oai-authenticated-user-id')}
@@ -89,7 +89,7 @@ export async function POST(req:Request){
  Object.assign(order,{tableNumber,totalCents:Math.round(total*100),customerId:access.customerId,isTest:access.mock,paymentMode:access.mock?'mock':'manual'});
  if(access.mock){order.payment=order.source==='self'?'待模拟付款':'模拟付款';order.paidTotal=0;Object.assign(order,{simulatedTotal:order.source==='self'?0:total});order.history[0].action=order.source==='self'?'提交测试订单，待模拟付款':'POS 模拟付款，不扣款'}
  if(importing){const paid=Number(draft.paidTotal??total);if(!Number.isFinite(paid)||paid<0)return json({error:'旧订单金额无效'},400);order.paidTotal=paid;order.refundAmount=Number(draft.refundAmount)||0;Object.assign(order,{corrections:Array.isArray(draft.corrections)?draft.corrections.filter((c:{amount:unknown})=>Number.isFinite(Number(c.amount))):[]})}
- const result=await env.DB!.prepare('INSERT INTO sales (user_id,order_id,month,body,revision) SELECT ?,?,?,?,1 WHERE NOT EXISTS (SELECT 1 FROM sales_closures WHERE user_id=? AND month=?) ON CONFLICT(user_id,order_id) DO NOTHING').bind(user,order.id,order.month,JSON.stringify(order),user,order.month).run();
+ const results=await env.DB!.batch([env.DB!.prepare('INSERT INTO store_counters(user_id,value) VALUES(?,1) ON CONFLICT(user_id) DO UPDATE SET value=value+1').bind(user),env.DB!.prepare('INSERT INTO sales (user_id,order_id,month,body,revision,pickup_no) SELECT ?,?,?,?,1,(SELECT value FROM store_counters WHERE user_id=?) WHERE NOT EXISTS (SELECT 1 FROM sales_closures WHERE user_id=? AND month=?) ON CONFLICT(user_id,order_id) DO NOTHING').bind(user,order.id,order.month,JSON.stringify(order),user,user,order.month)]);const result=results[1];
  const saved=await row(user,order.id);if(!saved)return json({error:'该月份已归档，不能加入订单'},409);
  if(access.role==='customer'&&decode(saved).customerId!==access.customerId)return json({error:'订单编号已被使用'},409);
  if(result.meta.changes)await notifyOrders(user,access.customerId);

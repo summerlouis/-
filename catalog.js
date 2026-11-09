@@ -38,7 +38,7 @@
   function checkPrice(price){if(!Number.isFinite(price)||price<0||price>99999.99||Math.abs(price*100-Math.round(price*100))>0.000001)throw Error('请输入 0 至 99999.99 的价格，最多两位小数')}
   async function update(code,patch,expectedRevision){
     const product=catalog.find(p=>p.code===code);if(!product)throw Error('商品不存在');
-    if('price' in patch)checkPrice(patch.price);
+    if('price' in patch){checkPrice(patch.price);if(patch.price!==product.price&&!await BaoDialog.confirm('确认修改价格 / Confirmer le prix\n'+product.dish+' · '+product.fr+'\n'+product.price.toFixed(2)+' € → '+patch.price.toFixed(2)+' €'))throw Error('已取消修改 / Modification annulée');}
     if(cloud){try{await mutate('PATCH',{code,...patch,revision:expectedRevision??product.revision??0})}catch(error){if(error.status===409){await refresh();throw Error('imageId' in patch?'该商品已在另一台设备修改，图片尚未保存。请核对后重新选择图片。':'该商品已在另一台设备修改，请核对最新价格后重试')}throw error}}
     else apply(catalog.map(p=>p.code===code?{...p,...patch,revision:(p.revision||0)+1}:p));
   }

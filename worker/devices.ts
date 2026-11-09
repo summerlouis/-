@@ -7,7 +7,7 @@ export async function deviceValid(session:Session,request:Request,env:Cloudflare
  await env.DB!.prepare('INSERT OR IGNORE INTO device_registry(store,id,role,label,created,seen,expires) VALUES(?,?,?,?,?,?,?)').bind(session.store,id,session.role,(request.headers.get('user-agent')||'未命名设备').slice(0,160),now,now,session.expires).run();
  const row=await env.DB!.prepare('SELECT revoked,seen FROM device_registry WHERE store=? AND id=?').bind(session.store,id).first<{revoked:number,seen:number}>();
  if(!row||row.revoked)return false;
- if(now-row.seen>300000)await env.DB!.prepare('UPDATE device_registry SET seen=? WHERE store=? AND id=?').bind(now,session.store,id).run();
+ if(now-row.seen>30000)await env.DB!.prepare('UPDATE device_registry SET seen=? WHERE store=? AND id=?').bind(now,session.store,id).run();
  return true;
 }
 export async function manageDevices(request:Request,env:Cloudflare.Env,session:Session){

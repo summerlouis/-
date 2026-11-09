@@ -1,12 +1,13 @@
 (()=>{
  const style=document.createElement('style');style.textContent='.bao-dialog{width:min(460px,calc(100vw - 32px));max-height:calc(100dvh - 32px);overflow:auto;box-sizing:border-box;border:0;border-radius:18px;padding:26px;background:#f7fbff;color:#123f72;box-shadow:0 20px 70px #102b4b55;font-family:Arial,"Microsoft YaHei",sans-serif}.bao-dialog::backdrop{background:#102b4bbf}.bao-dialog form{margin:0}.bao-dialog h2{font-size:23px;line-height:1.35;margin:8px 0 18px}.bao-dialog .bao-dialog-label{font-size:12px;color:#557797;font-weight:700;letter-spacing:.05em}.bao-dialog .bao-dialog-message{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.65;font-size:15px;padding:14px;background:#eaf3ff;border-radius:10px}.bao-dialog input{box-sizing:border-box;width:100%;padding:12px;border:1px solid #aec9e5;border-radius:9px;color:#123f72;background:white;font:inherit;margin-top:12px}.bao-dialog-actions{display:flex;gap:10px;margin-top:22px}.bao-dialog button{cursor:pointer;border:1px solid #abc8e7;border-radius:9px;min-height:44px;padding:10px 14px;font:inherit;font-weight:700;color:#123f72;background:#eaf3ff}.bao-dialog-actions button{flex:1;font-size:14px;padding:10px 8px;white-space:nowrap}.bao-dialog button[value=confirm]{background:#123f72;color:white;border-color:#123f72}.bao-dialog .bao-dialog-close{float:right;border:0;background:transparent;font-size:24px;padding:0;min-width:44px}.bao-dialog :focus-visible{outline:3px solid #dcab48;outline-offset:2px}';document.head.append(style);
  let active=false;const alerts=[];
- function show(kind,message,value=''){
+ function show(kind,message,value='',storeName=window.BaoRuntime?.storeName){
   if(active){if(kind==='alert')return new Promise(resolve=>alerts.push(()=>show(kind,message,value).then(resolve)));return Promise.resolve(kind==='prompt'?null:false)}
   active=true;
   return new Promise(resolve=>{
    const dialog=document.createElement('dialog');dialog.className='bao-dialog';dialog.setAttribute('aria-labelledby','bao-dialog-title');dialog.setAttribute('aria-describedby','bao-dialog-message');
    dialog.innerHTML='<form method="dialog"><button class="bao-dialog-close" value="cancel" aria-label="Fermer · 关闭">×</button><p class="bao-dialog-label">BAO.DUMPLING</p><h2 id="bao-dialog-title"></h2><div id="bao-dialog-message" class="bao-dialog-message"></div><div class="bao-dialog-actions"></div></form>';
+   dialog.querySelector('.bao-dialog-label').textContent=storeName?'操作门店 · Boutique / Toko：'+storeName:'BAO.DUMPLING';
    dialog.querySelector('h2').textContent=kind==='alert'?'Information · 提示':kind==='prompt'?'Saisir les informations · 填写信息':'Confirmation · 操作确认';dialog.querySelector('.bao-dialog-message').textContent=String(message??'');
    let input;if(kind==='prompt'){input=document.createElement('input');input.value=String(value??'');input.setAttribute('aria-labelledby','bao-dialog-message');dialog.querySelector('.bao-dialog-message').after(input)}
    const actions=dialog.querySelector('.bao-dialog-actions');if(kind!=='alert'){const cancel=document.createElement('button');cancel.value='cancel';cancel.textContent='Annuler · 取消';cancel.autofocus=kind==='confirm';actions.append(cancel)}
@@ -14,5 +15,5 @@
    dialog.addEventListener('close',()=>{const result=dialog.returnValue==='confirm'?(kind==='prompt'?input.value:true):(kind==='prompt'?null:false);dialog.remove();active=false;resolve(result);const next=alerts.shift();if(next)queueMicrotask(next)},{once:true});document.body.append(dialog);dialog.showModal();if(input){input.focus();input.select()}
   });
  }
- window.BaoDialog={alert:message=>show('alert',message),confirm:message=>show('confirm',message),prompt:(message,value)=>show('prompt',message,value)};
+ window.BaoDialog={alert:message=>show('alert',message),confirm:(message,storeName)=>show('confirm',message,'',storeName),prompt:(message,value)=>show('prompt',message,value)};
 })();

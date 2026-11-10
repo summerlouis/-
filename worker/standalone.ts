@@ -1,3 +1,4 @@
+import {handoffs} from './handoffs';
 import {storeHealth} from './store-health';
 import {storesAPI,owner,ensureRoot,result} from './stores';
 import {languageAPI,languageSetting} from './language';
@@ -36,6 +37,7 @@ const service = {
       if (!previous || session !== previous) next.headers.set('Set-Cookie',await sessionCookie(session,request,env));
       return next;
     };
+    if(path==='/api/handoffs')return secureResponse(await handoffs(request,env,session));
     if(path==='/api/store-health')return secureResponse(await storeHealth(request,env,session));
     if(path==='/api/language')return secureResponse(await languageAPI(request,env,session));
     if(path==='/api/audit-view')return auditView(request,env,session);
@@ -118,6 +120,6 @@ export default {async fetch(request:Request,env:Cloudflare.Env,ctx:ExecutionCont
  if(match){url.pathname='/'+match[2];const headers=new Headers(request.headers);const local=await readSession(request,scoped);if(!local||local.owner){const root=await owner(request,env);if(root){const cookie=await sessionCookie({...root,store:id,owner:true},request,scoped);headers.set('cookie',(headers.get('cookie')||'')+'; '+cookie.split(';')[0])}else if(local?.owner){headers.set('cookie',(headers.get('cookie')||'').split(';').filter(v=>!v.trim().startsWith('bao_device_session_'+id+'=')).join(';'))}}req=new Request(url,{method:request.method,headers,body:request.body,redirect:request.redirect});}
  const response=await service.fetch(req,scoped,ctx);
  if(response.status===101)return response;
- if(response.headers.get('Content-Type')?.includes('text/html')&&response.ok){let html=await response.text();if(prefix)html=html.replace(/(src|href)="\/(?!\/)/g,'$1="'+prefix);html=html.replace('<head>','<head><script src="'+(prefix||'/')+'store-scope.js"></script>');html=html.replace('</body>','<script src="store-health.js"></script><script src="stores-ui.js"></script></body>');return new Response(html,{status:response.status,headers:response.headers});}
+ if(response.headers.get('Content-Type')?.includes('text/html')&&response.ok){let html=await response.text();if(prefix)html=html.replace(/(src|href)="\/(?!\/)/g,'$1="'+prefix);html=html.replace('<head>','<head><script src="'+(prefix||'/')+'store-scope.js"></script>');html=html.replace('</body>','<script src="store-health.js"></script><script src="stores-ui.js"></script><script src="handoffs.js"></script></body>');return new Response(html,{status:response.status,headers:response.headers});}
  return response;
 }};

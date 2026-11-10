@@ -125,9 +125,12 @@ export async function PATCH(req:Request){
   order.orderedDateKey=order.dateKey;order.orderedTime=order.time;order.dateKey=received.dateKey;order.time=received.time;order.month=received.dateKey.slice(0,7);
   order.status='paid';order.paidTotal=order.total;order.payment=data.payment;order.kitchenStatus='new';order.paidAt=now;action='柜台确认收款 · '+data.payment;
  }else if(data.action==='kitchen'){
-  const next:{[key:string]:string}={new:'making',making:'ready',ready:'complete'};
+  const undo=data.undo===true;
+  const next:{[key:string]:string}=undo?{making:'new',ready:'making',complete:'ready'}:{new:'making',making:'ready',ready:'complete'};
+  if(undo&&order.imported)return json({error:'导入的历史订单不能撤回厨房状态'},409);
   if(!['paid','done'].includes(order.status)||next[order.kitchenStatus||'new']!==data.next)return json({error:'订单状态已变化'},409);
-  order.kitchenStatus=data.next;action='厨房状态：'+data.next;
+  const previous=order.kitchenStatus||'new';order.kitchenStatus=data.next;order.kitchenUpdatedAt=now;action=(undo?'厨房撤回：'+previous+' → ':'厨房状态：')+data.next;
+  if(undo&&previous==='complete')order.status='paid';
   if(data.next==='complete')order.status='done';
  }else if(data.action==='cancel'){
   if(!access.mock||order.paymentMode!=='mock'||!['admin','cashier'].includes(access.role))return json({error:'仅收银或管理设备可取消模拟订单'},403);
